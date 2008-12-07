@@ -1,0 +1,3 @@
+This project demonstrates the use of CUDA libraries and the accessing of user CUDA code from Mathematica.
+
+This has been tested with Mathematica 6.0.3 and CUDA 2.1 Beta for Linux and Windows and Cuda 2.0 for Mac OS.
