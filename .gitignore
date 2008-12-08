@@ -1,0 +1,4 @@
+bin/*
+lib/*
+common/obj
+projects/*/obj
