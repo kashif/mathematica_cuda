@@ -33,14 +33,26 @@
 #
 ################################################################################
 
-.SUFFIXES : .cu .cu_dbg_o .c_dbg_o .cpp_dbg_o .cu_rel_o .c_rel_o .cpp_rel_o .cubin .tm
+.SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .tm
 
-# MathLink
-VERSION=6.0
-MLINKDIR = /Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit
-SYS = MacOSX-x86-64
-CADDSDIR = ${MLINKDIR}/CompilerAdditions
-EXTRA_CFLAGS=-Wno-long-double
+# detect if 32 bit or 64 bit system
+HP_64 =	$(shell uname -m | grep 64)
+
+# detect OS
+OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
+OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
+# 'linux' is output for Linux system, 'darwin' for OS X
+DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
+
+# Mathematica settings
+VERSION := 7.0
+MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
+
+SYS := Linux-x86-64
+MATHLIB := -lML64i3 -lm -lpthread -lrt -lstdc++
+CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
+MPREP := $(CADDSDIR)/mprep
+
 
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
@@ -50,12 +62,6 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 ifdef cuda-install
 	CUDA_INSTALL_PATH := $(cuda-install)
 endif
-
-# detect OS
-OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
-OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
-# 'linux' is output for Linux system, 'darwin' for OS X
-DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
 
 # Basic directory setup for SDK
 # (override directories only if they are not already defined)
@@ -69,16 +75,12 @@ COMMONDIR  := $(ROOTDIR)/../common
 
 # Compilers
 NVCC       := $(CUDA_INSTALL_PATH)/bin/nvcc 
-MPREP      := $(CADDSDIR)/mprep
 CXX        := g++
 CC         := gcc
 LINK       := g++ -fPIC
 
 # Includes
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/inc -I$(CADDSDIR)
-
-# architecture flag for cubin build
-CUBIN_ARCH_FLAG := -m32
 
 # Warning flags
 CXXWARN_FLAGS := \
@@ -105,8 +107,8 @@ CWARN_FLAGS := $(CXXWARN_FLAGS) \
 
 # Compiler-specific flags
 NVCCFLAGS := 
-CXXFLAGS  := $(CXXWARN_FLAGS) $(EXTRA_CFLAGS)
-CFLAGS    := $(CWARN_FLAGS) $(EXTRA_CFLAGS)
+CXXFLAGS  := $(CXXWARN_FLAGS)
+CFLAGS    := $(CWARN_FLAGS)
 
 # Common flags
 COMMONFLAGS += $(INCLUDES) -DUNIX
@@ -132,21 +134,18 @@ endif
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG := -m32
 
-# detect if 32 bit or 64 bit system
-HP_64 =	$(shell uname -m | grep 64)
-
 # OpenGL is used or not (if it is used, then it is necessary to include GLEW)
 ifeq ($(USEGLLIB),1)
 
 	ifneq ($(DARWIN),)
 		OPENGLLIB := -L/System/Library/Frameworks/OpenGL.framework/Libraries -lGL -lGLU $(COMMONDIR)/lib/$(OSLOWER)/libGLEW.a
 	else
-		OPENGLLIB := -lGL -lGLU
+		OPENGLLIB := -lGL -lGLU -lX11 -lXi -lXmu
 
 		ifeq "$(strip $(HP_64))" ""
-			OPENGLLIB += -lGLEW
+			OPENGLLIB += -lGLEW -L/usr/X11R6/lib
 		else
-			OPENGLLIB += -lGLEW_x86_64
+			OPENGLLIB += -lGLEW_x86_64 -L/usr/X11R6/lib64
 		endif
 	endif
 
@@ -184,9 +183,9 @@ ifeq ($(USECUDPP), 1)
 endif
 
 # Libs
-LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR) -lMLi3
+LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR) $(MATHLIB)
 ifeq ($(USEDRVAPI),1)
-   LIB += -lcuda ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) ${LIB} 
+   LIB += -lcuda ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) ${LIB}
 else
    LIB += -lcudart ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) ${LIB}
 endif
@@ -245,7 +244,6 @@ endif
 ifeq ($(keep), 1)
 	NVCCFLAGS += -keep
 	NVCC_KEEP_CLEAN := *.i* *.cubin *.cu.c *.cudafe* *.fatbin.c *.ptx
-	MPREP_KEEP_CLEAN := *tm.c
 endif
 
 ifdef maxregisters
@@ -274,9 +272,10 @@ endif
 # Set up object files
 ################################################################################
 OBJDIR := $(ROOTOBJDIR)/$(BINSUBDIR)
-OBJS +=  $(patsubst %.cpp,$(OBJDIR)/%.cpp_o,$(notdir $(CCFILES)))
-OBJS +=  $(patsubst %.c,$(OBJDIR)/%.c_o,$(notdir $(CFILES)))
-OBJS +=  $(patsubst %.cu,$(OBJDIR)/%.cu_o,$(notdir $(CUFILES)))
+OBJS +=  $(patsubst %.cpp,$(OBJDIR)/%.cpp.o,$(notdir $(CCFILES)))
+OBJS +=  $(patsubst %.c,$(OBJDIR)/%.c.o,$(notdir $(CFILES)))
+OBJS +=  $(patsubst %.cu,$(OBJDIR)/%.cu.o,$(notdir $(CUFILES)))
+OBJS +=  $(patsubst %.tm,$(OBJDIR)/%tm.c.o,$(notdir $(TMFILES)))
 
 ################################################################################
 # Set up cubin files
@@ -287,16 +286,16 @@ CUBINS +=  $(patsubst %.cu,$(CUBINDIR)/%.cubin,$(notdir $(CUBINFILES)))
 ################################################################################
 # Rules
 ################################################################################
-$(OBJDIR)/%.c_o : $(SRCDIR)%.c $(C_DEPS)
+$(SRCDIR)%tm.c : $(SRCDIR)%.tm
+	$(VERBOSE)$(MPREP) $? -o $@
+
+$(OBJDIR)/%.c.o : $(SRCDIR)%.c $(C_DEPS)
 	$(VERBOSE)$(CC) $(CFLAGS) -o $@ -c $<
 
-$(SRCDIR)/%.tm.c : $(SRCDIR)%.tm $(C_DEPS)
-	$(VERBOSE)$(MPREP) -o $@ $<
-
-$(OBJDIR)/%.cpp_o : $(SRCDIR)%.cpp $(C_DEPS)
+$(OBJDIR)/%.cpp.o : $(SRCDIR)%.cpp $(C_DEPS)
 	$(VERBOSE)$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-$(OBJDIR)/%.cu_o : $(SRCDIR)%.cu $(CU_DEPS)
+$(OBJDIR)/%.cu.o : $(SRCDIR)%.cu $(CU_DEPS)
 	$(VERBOSE)$(NVCC) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -c $<
 
 $(CUBINDIR)/%.cubin : $(SRCDIR)%.cu cubindirectory
@@ -305,8 +304,8 @@ $(CUBINDIR)/%.cubin : $(SRCDIR)%.cu cubindirectory
 #
 # The following definition is a template that gets instantiated for each SM
 # version (sm_10, sm_13, etc.) stored in SMVERSIONS.  It does 2 things:
-# 1. It adds to OBJS a .cu_sm_XX_o for each .cu file it finds in CUFILES_sm_XX.
-# 2. It generates a rule for building .cu_sm_XX_o files from the corresponding 
+# 1. It adds to OBJS a .cu_sm_XX.o for each .cu file it finds in CUFILES_sm_XX.
+# 2. It generates a rule for building .cu_sm_XX.o files from the corresponding 
 #    .cu file.
 #
 # The intended use for this is to allow Makefiles that use common.mk to compile
@@ -317,8 +316,8 @@ $(CUBINDIR)/%.cubin : $(SRCDIR)%.cu cubindirectory
 # CUFILES_sm_12 := anothercudakernel_sm12.cu
 #
 define SMVERSION_template
-OBJS += $(patsubst %.cu,$(OBJDIR)/%.cu_$(1)_o,$(notdir $(CUFILES_$(1))))
-$(OBJDIR)/%.cu_$(1)_o : $(SRCDIR)%.cu $(CU_DEPS)
+OBJS += $(patsubst %.cu,$(OBJDIR)/%.cu_$(1).o,$(notdir $(CUFILES_$(1))))
+$(OBJDIR)/%.cu_$(1).o : $(SRCDIR)%.cu $(CU_DEPS)
 	$(VERBOSE)$(NVCC) -o $$@ -c $$< $(NVCCFLAGS) -arch $(1)
 endef
 
@@ -338,6 +337,7 @@ makedirectories:
 	$(VERBOSE)mkdir -p $(OBJDIR)
 	$(VERBOSE)mkdir -p $(TARGETDIR)
 
+
 tidy :
 	$(VERBOSE)find . | egrep "#" | xargs rm -f
 	$(VERBOSE)find . | egrep "\~" | xargs rm -f
@@ -346,7 +346,6 @@ clean : tidy
 	$(VERBOSE)rm -f $(OBJS)
 	$(VERBOSE)rm -f $(CUBINS)
 	$(VERBOSE)rm -f $(TARGET)
-	$(VERBOSE)rm -f $(MPREP_KEEP_CLEAN)
 	$(VERBOSE)rm -f $(NVCC_KEEP_CLEAN)
 
 clobber : clean
