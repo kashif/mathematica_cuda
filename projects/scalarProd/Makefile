@@ -40,7 +40,7 @@ CUFILES		:= scalarProd.cu
 # CUDA dependency files
 CU_DEPS		:= scalarProd_kernel.cu
 # C/C++ source files (compiled with gcc / c++)
-CCFILES		:= scalarProd_gold.cpp
+# CCFILES		:= 
 # MathLink Template files
 TMFILES     := scalarProd.tm
 

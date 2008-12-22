@@ -1,7 +1,7 @@
 :Begin:
-:Function:      sumalist
-:Pattern:       SumAList[ list:{___Integer} ]
-:Arguments:     { Reverse[list] }
-:ArgumentTypes: { IntegerList }
-:ReturnType:    Integer
+:Function:      scalarProd
+:Pattern:       ScalarProd[ a_List, b_List ]
+:Arguments:     { a, b }
+:ArgumentTypes: { Manual }
+:ReturnType:    Manual
 :End:
