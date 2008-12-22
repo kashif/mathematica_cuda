@@ -12,7 +12,7 @@
 // Calculate scalar products of VectorN vectors of ElementN elements on CPU
 ///////////////////////////////////////////////////////////////////////////////
 extern "C"
-float scalarProd(void);
+void scalarProd(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Calculate scalar products of VectorN vectors of ElementN elements on GPU
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     return result;
 }
 
-float scalarProd(void)
+void scalarProd(void)
 {
     float *h_A;
     float *h_B;
@@ -45,12 +45,12 @@ float scalarProd(void)
 
     if(! MLGetReal32Array(stdlink, &h_A, &dims, &heads, &rank))
     {
-        return 0;
+        return;
     }
     
     if(! MLGetReal32Array(stdlink, &h_B, &dims, &heads, &rank))
     {
-        return 0;
+        return;
     }
     
     h_C_GPU = (float *)malloc(dims[0]*sizeof(float));
