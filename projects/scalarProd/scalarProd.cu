@@ -2,10 +2,9 @@
  * This sample calculates scalar products of a 
  * given set of input vector pairs
  */
+
 #include <stdio.h>
-
-#include <cutil.h>
-
+#include <cutil_inline.h>
 #include <mathlink.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,11 +24,14 @@ void scalarProd(void);
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {   
+    // use command-line specified CUDA device, otherwise use device with highest Gflops/s
+    if( cutCheckCmdLineFlag(argc, (const char**)argv, "device") )
+        cutilDeviceInit(argc, argv);
+    else
+        cudaSetDevice( cutGetMaxGflopsDeviceId() );
 
-    CUT_DEVICE_INIT(argc, argv);
 	int result = MLMain(argc, argv);
-    CUT_EXIT(argc, argv);
-
+    cutilExit(argc, argv);
     return result;
 }
 
@@ -55,31 +57,33 @@ void scalarProd(void)
     h_C_GPU = (float *)malloc(dims_A[0]*sizeof(float));
     
 
-    CUDA_SAFE_CALL( cudaMalloc((void **)&d_A, 
+    cutilSafeCall( cudaMalloc((void **)&d_A, 
                                 dims_A[0]*dims_A[1]*sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMalloc((void **)&d_B, 
+    cutilSafeCall( cudaMalloc((void **)&d_B, 
                                 dims_A[0]*dims_A[1]*sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMalloc((void **)&d_C, dims_A[0]*sizeof(float)) );
+    cutilSafeCall( cudaMalloc((void **)&d_C, dims_A[0]*sizeof(float)) );
 
     //Copy options data to GPU memory for further processing 
-    CUDA_SAFE_CALL( cudaMemcpy(d_A, h_A, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
-    CUDA_SAFE_CALL( cudaMemcpy(d_B, h_B, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
+    cutilSafeCall( cudaMemcpy(d_A, h_A, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
+    cutilSafeCall( cudaMemcpy(d_B, h_B, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
 
 
-    CUDA_SAFE_CALL( cudaThreadSynchronize() );
+    cutilSafeCall( cudaThreadSynchronize() );
     scalarProdGPU<<<128, 256>>>(d_C, d_A, d_B, dims_A[0], dims_A[1]);
-    CUT_CHECK_ERROR("scalarProdGPU() execution failed\n");
-    CUDA_SAFE_CALL( cudaThreadSynchronize() );
+    cutilCheckMsg("scalarProdGPU() execution failed\n");
+    cutilSafeCall( cudaThreadSynchronize() );
 
     //Read back GPU results to compare them to CPU results
-    CUDA_SAFE_CALL( cudaMemcpy(h_C_GPU, d_C, dims_A[0]*sizeof(float), cudaMemcpyDeviceToHost) );
+    cutilSafeCall( cudaMemcpy(h_C_GPU, d_C, dims_A[0]*sizeof(float), cudaMemcpyDeviceToHost) );
 
     MLPutReal32List(stdlink, h_C_GPU, dims_A[0]);
 
-    CUDA_SAFE_CALL( cudaFree(d_C) );
-    CUDA_SAFE_CALL( cudaFree(d_B) );
-    CUDA_SAFE_CALL( cudaFree(d_A) );
+    cutilSafeCall( cudaFree(d_C) );
+    cutilSafeCall( cudaFree(d_B) );
+    cutilSafeCall( cudaFree(d_A) );
 
     MLReleaseReal32Array(stdlink, h_A, dims_A, heads_A, rank_A);
     MLReleaseReal32Array(stdlink, h_B, dims_B, heads_B, rank_B);
+
+    cudaThreadExit();
 }

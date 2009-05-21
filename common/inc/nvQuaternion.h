@@ -108,15 +108,15 @@ public:
 
     const T * get_value() const
     {
-        return  &q[0];
+        return  &_array[0];
     }
 
     void get_value( T &q0, T &q1, T &q2, T &q3 ) const
     {
-        q0 = q[0];
-        q1 = q[1];
-        q2 = q[2];
-        q3 = q[3];
+        q0 = _array[0];
+        q1 = _array[1];
+        q2 = _array[2];
+        q3 = _array[3];
     }
 
     quaternion & set_value( T q0, T q1, T q2, T q3 )
@@ -275,7 +275,7 @@ public:
         // ensures that the anti-parallel case leads to a positive dot
         if( alpha == T(-1.0))
         {
-            vec3 v;
+            vec3<T> v;
 
             if(p1[0] != p1[1] || p1[0] != p1[2])
                 v = vec3<T>(p1[1], p1[2], p1[0]);
@@ -361,11 +361,11 @@ public:
 
     void mult_vec( vec3<T> & src_and_dst) const
     {
-        mult_vec(vec3(src_and_dst), src_and_dst);
+        mult_vec(vec3<T>(src_and_dst), src_and_dst);
     }
 
     void scale_angle( T scaleFactor ) {
-        vec3 axis;
+        vec3<T> axis;
         T radians;
 
         get_value(axis, radians);

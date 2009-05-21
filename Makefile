@@ -1,5 +1,8 @@
-# CUDA SDK 10 Linux Version 2.02.0807.1535
-PROJECTS := $(shell find projects -name Makefile)
+ifeq ($(emu), 1)
+  PROJECTS := $(shell find projects -name Makefile | xargs grep -L 'USEDRVAPI')
+else
+  PROJECTS := $(shell find projects -name Makefile)
+endif
 
 %.ph_build : lib/libcutil.so lib/libparamgl.so lib/librendercheckgl.so
 	make -C $(dir $*) $(MAKECMDGOALS)

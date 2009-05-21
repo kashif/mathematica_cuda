@@ -71,6 +71,11 @@ inline int min(int a, int b)
 {
   return a < b ? a : b;
 }
+
+inline float rsqrtf(float x)
+{
+    return 1.0f / sqrtf(x);
+}
 #endif
 
 // float functions
@@ -245,7 +250,7 @@ inline __host__ __device__ float length(float2 v)
 // normalize
 inline __host__ __device__ float2 normalize(float2 v)
 {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
 
@@ -259,6 +264,12 @@ inline __host__ __device__ float2 floor(const float2 v)
 inline __host__ __device__ float2 reflect(float2 i, float2 n)
 {
 	return i - 2.0f * n * dot(n,i);
+}
+
+// absolute value
+inline __host__ __device__ float2 fabs(float2 v)
+{
+	return make_float2(fabs(v.x), fabs(v.y));
 }
 
 // float3 functions
@@ -409,7 +420,7 @@ inline __host__ __device__ float length(float3 v)
 // normalize
 inline __host__ __device__ float3 normalize(float3 v)
 {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
 
@@ -423,6 +434,12 @@ inline __host__ __device__ float3 floor(const float3 v)
 inline __host__ __device__ float3 reflect(float3 i, float3 n)
 {
 	return i - 2.0f * n * dot(n,i);
+}
+
+// absolute value
+inline __host__ __device__ float3 fabs(float3 v)
+{
+	return make_float3(fabs(v.x), fabs(v.y), fabs(v.z));
 }
 
 // float4 functions
@@ -551,7 +568,7 @@ inline __host__ __device__ float length(float4 r)
 // normalize
 inline __host__ __device__ float4 normalize(float4 v)
 {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
 
@@ -559,6 +576,12 @@ inline __host__ __device__ float4 normalize(float4 v)
 inline __host__ __device__ float4 floor(const float4 v)
 {
     return make_float4(floor(v.x), floor(v.y), floor(v.z), floor(v.w));
+}
+
+// absolute value
+inline __host__ __device__ float4 fabs(float4 v)
+{
+	return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
 }
 
 // int3 functions

@@ -1,5 +1,5 @@
 /*
-* Copyright 1993-2006 NVIDIA Corporation.  All rights reserved.
+* Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
 *
 * NOTICE TO USER:   
 *
@@ -34,6 +34,7 @@
 
 // includes, file
 #include <cutil.h>
+#include <string.h>
 
 // includes, system
 #include <fstream>
@@ -55,6 +56,10 @@
 
 #ifndef max
 #define max(a,b) (a < b ? b : a);
+#endif
+
+#ifndef min
+#define min(a,b) (a < b ? a : b);
 #endif
 
 #define MIN_EPSILON_ERROR 1e-3f
@@ -397,17 +402,20 @@ namespace
     template<class T, class S>
     CUTBoolean  
     compareData( const T* reference, const T* data, const unsigned int len, 
-                 const S epsilon) 
+                 const S epsilon, const float threshold) 
     {
         CUT_CONDITION( epsilon >= 0);
 
         bool result = true;
+        unsigned int error_count = 0;
 
         for( unsigned int i = 0; i < len; ++i) {
 
             T diff = reference[i] - data[i];
             bool comp = (diff <= epsilon) && (diff >= -epsilon);
             result &= comp;
+
+            error_count += !comp;
 
 #ifdef _DEBUG
             if( ! comp) 
@@ -420,7 +428,15 @@ namespace
 #endif
         }
 
-        return (result) ? CUTTrue : CUTFalse;
+        if (threshold == 0.0f) {
+            return (result) ? CUTTrue : CUTFalse;
+        } else {
+            if (error_count) {
+                printf("%4.2f(%%) of bytes mismatched (count=%d)\n", (float)error_count*100/(float)len, error_count);
+            }
+
+            return (len*threshold > error_count) ? CUTTrue : CUTFalse;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////// 
@@ -448,18 +464,68 @@ namespace
             bool comp = (diff < max_error);
             result &= comp;
 
-#ifdef _DEBUG
             if( ! comp) 
             {
                 error_count++;
-                printf("ERROR(epsilon=%4.3f), i=%d, (ref)0x%02x / (data)0x%02x / (diff)%d\n", max_error, i, reference[i], data[i], (unsigned int)diff);
-            }
+#ifdef _DEBUG
+//                printf("ERROR(epsilon=%4.3f), i=%d, (ref)0x%02x / (data)0x%02x / (diff)%d\n", max_error, i, reference[i], data[i], (unsigned int)diff);
 #endif
+            }
         }
         if (error_count) {
             printf("total # of errors = %d\n", error_count);
         }
         return (error_count == 0) ? CUTTrue : CUTFalse;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////// 
+    //! Compare two arrays of arbitrary type       
+    //! @return  true if \a reference and \a data are identical, otherwise false
+    //! @param reference  handle to the reference data / gold image
+    //! @param data       handle to the computed data
+    //! @param len        number of elements in reference and data
+    //! @param epsilon    epsilon to use for the comparison
+    //! @param epsilon    threshold % of (# of bytes) for pass/fail
+    //////////////////////////////////////////////////////////////////////////////
+    template<class T, class S>
+    CUTBoolean  
+    compareDataAsFloatThreshold( const T* reference, const T* data, const unsigned int len, 
+                        const S epsilon, const float threshold) 
+    {
+        CUT_CONDITION( epsilon >= 0);
+
+        // If we set epsilon to be 0, let's set a minimum threshold
+        float max_error = max( (float)epsilon, MIN_EPSILON_ERROR );
+        int error_count = 0;
+        bool result = true;
+
+        for( unsigned int i = 0; i < len; ++i) {
+            float diff = fabs((float)reference[i] - (float)data[i]);
+            bool comp = (diff < max_error);
+            result &= comp;
+
+            if( ! comp) 
+            {
+                error_count++;
+#ifdef _DEBUG
+//                printf("ERROR(epsilon=%4.3f), i=%d, (ref)0x%02x / (data)0x%02x / (diff)%d\n", max_error, i, reference[i], data[i], (unsigned int)diff);
+#endif
+            }
+        }
+
+        if (threshold == 0.0f) {
+            if (error_count) {
+                printf("total # of errors = %d\n", error_count);
+            }
+            return (error_count == 0) ? CUTTrue : CUTFalse;
+        } else {
+
+            if (error_count) {
+                printf("%4.2f(%%) of bytes mismatched (count=%d)\n", (float)error_count*100/(float)len, error_count);
+            }
+
+            return ((len*threshold > error_count) ? CUTTrue : CUTFalse);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -602,7 +668,7 @@ cutFree( void* ptr) {
 
 //////////////////////////////////////////////////////////////////////////////
 //! Find the path for a file assuming that
-//! files are either in data/ or in ../../../projects/<executable_name>/data/.
+//! files are either in data/ or in ../../../src/<executable_name>/data/.
 //!
 //! @return the path if succeeded, otherwise 0
 //! @param filename         name of the file
@@ -626,7 +692,7 @@ cutFindFilePath(const char* filename, const char* executable_path)
         return file_path;
     free( file_path);
 
-    // search in ../../../projects/<executable_name>/data/
+    // search in ../../../src/<executable_name>/data/
     if (executable_path == 0)
         return 0;
     size_t executable_path_len = strlen(executable_path);
@@ -1265,7 +1331,7 @@ cutComparef( const float* reference, const float* data,
             const unsigned int len ) 
 {
     const float epsilon = 0.0;
-    return compareData( reference, data, len, epsilon);
+    return compareData( reference, data, len, epsilon, 0.0f );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1281,7 +1347,23 @@ cutComparei( const int* reference, const int* data,
             const unsigned int len ) 
 {
     const int epsilon = 0;
-    return compareData( reference, data, len, epsilon);
+    return compareData( reference, data, len, epsilon, 0.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//! Compare two unsigned integer arrays, with epsilon and threshold
+//! @return  CUTTrue if \a reference and \a data are identical, 
+//!          otherwise CUTFalse
+//! @param reference  handle to the reference data / gold image
+//! @param data       handle to the computed data
+//! @param len        number of elements in reference and data
+////////////////////////////////////////////////////////////////////////////////
+CUTBoolean CUTIL_API
+cutCompareuit( const unsigned int* reference, const unsigned int* data,
+            const unsigned int len, const float epsilon, const float threshold )
+{
+//    const int epsilon = 0;
+    return compareData( reference, data, len, epsilon, threshold );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1297,7 +1379,22 @@ cutCompareub( const unsigned char* reference, const unsigned char* data,
              const unsigned int len ) 
 {
     const int epsilon = 0;
-    return compareData( reference, data, len, epsilon);
+    return compareData( reference, data, len, epsilon, 0.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//! Compare two integer arrays (inc Threshold for # of pixel we can have errors)
+//! @return  CUTTrue if \a reference and \a data are identical, 
+//!          otherwise CUTFalse
+//! @param reference  handle to the reference data / gold image
+//! @param data       handle to the computed data
+//! @param len        number of elements in reference and data
+////////////////////////////////////////////////////////////////////////////////
+CUTBoolean CUTIL_API
+cutCompareubt( const unsigned char* reference, const unsigned char* data,
+             const unsigned int len, const float epsilon, const float threshold ) 
+{
+    return compareDataAsFloatThreshold( reference, data, len, epsilon, threshold );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1310,7 +1407,7 @@ cutCompareub( const unsigned char* reference, const unsigned char* data,
 ////////////////////////////////////////////////////////////////////////////////
 CUTBoolean CUTIL_API
 cutCompareube( const unsigned char* reference, const unsigned char* data,
-             const unsigned int len, const int epsilon ) 
+             const unsigned int len, const float epsilon ) 
 {
     return compareDataAsFloat( reference, data, len, epsilon );
 }
@@ -1328,8 +1425,26 @@ CUTBoolean CUTIL_API
 cutComparefe( const float* reference, const float* data,
              const unsigned int len, const float epsilon ) 
 {
-    return compareData( reference, data, len, epsilon);
+    return compareData( reference, data, len, epsilon, 0.0f);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//! Compare two float arrays with an epsilon tolerance for equality and a 
+//!     threshold for # pixel errors
+//! @return  CUTTrue if \a reference and \a data are identical, 
+//!          otherwise CUTFalse
+//! @param reference  handle to the reference data / gold image
+//! @param data       handle to the computed data
+//! @param len        number of elements in reference and data
+//! @param epsilon    epsilon to use for the comparison
+////////////////////////////////////////////////////////////////////////////////
+CUTBoolean CUTIL_API
+cutComparefet( const float* reference, const float* data,
+             const unsigned int len, const float epsilon, const float threshold ) 
+{
+    return compareDataAsFloatThreshold( reference, data, len, epsilon, threshold );
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //! Compare two float arrays using L2-norm with an epsilon tolerance for equality
@@ -1375,6 +1490,77 @@ cutCompareL2fe( const float* reference, const float* data,
 #endif
 
     return result ? CUTTrue : CUTFalse;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//! Compare two PPM image files with an epsilon tolerance for equality
+//! @return  CUTTrue if \a reference and \a data are identical, 
+//!          otherwise CUTFalse
+//! @param src_file   filename for the image to be compared
+//! @param data       filename for the reference data / gold image
+//! @param epsilon    epsilon to use for the comparison
+//! @param threshold  threshold of pixels that can still mismatch to pass (i.e. 0.15f = 15% must pass)
+//! @param verboseErrors output details of image mismatch to std::cerr
+////////////////////////////////////////////////////////////////////////////////
+
+DLL_MAPPING
+CUTBoolean CUTIL_API
+cutComparePPM( const char *src_file, const char *ref_file, 
+			  const float epsilon, const float threshold, bool verboseErrors )
+{
+	unsigned char *src_data, *ref_data;
+	unsigned long error_count = 0;
+	unsigned int ref_width, ref_height;
+	unsigned int src_width, src_height;
+
+	if (src_file == NULL || ref_file == NULL) {
+		if(verboseErrors) std::cerr << "PPMvsPPM: src_file or ref_file is NULL.  Aborting comparison\n";
+		return CUTFalse;
+	}
+
+    if(verboseErrors) {
+        std::cerr << "> Compare (a)rendered:  <" << src_file << ">\n";
+        std::cerr << ">         (b)reference: <" << ref_file << ">\n";
+    }
+
+	if (cutLoadPPM4ub(ref_file, &ref_data, &ref_width, &ref_height) != CUTTrue) 
+	{
+		if(verboseErrors) std::cerr << "PPMvsPPM: unable to load ref image file: "<< ref_file << "\n";
+		return CUTFalse;
+	}
+
+	if (cutLoadPPM4ub(src_file, &src_data, &src_width, &src_height) != CUTTrue) 
+	{
+		std::cerr << "PPMvsPPM: unable to load src image file: " << src_file << "\n";
+		return CUTFalse;
+	}
+
+	if(src_height != ref_height || src_width != ref_width)
+	{
+		if(verboseErrors) std::cerr << "PPMvsPPM: source and ref size mismatch (" << src_width << 
+			"," << src_height << ")vs(" << ref_width << "," << ref_height << ")\n";
+
+//        src_height = min(src_height, ref_height);
+//        src_width  = min(src_width , ref_width );
+//		return CUTFalse;
+	}
+
+	if(verboseErrors) std::cerr << "PPMvsPPM: comparing images size (" << src_width << 
+		"," << src_height << ") epsilon(" << epsilon << "), threshold(" << threshold*100 << "%)\n";
+//	if (cutCompareube( ref_data, src_data, src_width*src_height*4, epsilon ) == CUTFalse) 
+	if (cutCompareubt( ref_data, src_data, src_width*src_height*4, epsilon, threshold ) == CUTFalse) 
+	{
+		error_count=1;
+	}
+
+	if (error_count == 0) 
+	{ 
+		if(verboseErrors) std::cerr << "  PASSED!\n"; 
+	} else 
+	{
+		if(verboseErrors) std::cerr << "  FAILED! "<<error_count<<" errors...\n";
+	}
+	return (error_count == 0)?CUTTrue:CUTFalse;  // returns true if all pixels pass
 }
 
 ////////////////////////////////////////////////////////////////////////////////

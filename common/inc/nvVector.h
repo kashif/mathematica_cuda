@@ -153,7 +153,7 @@ public:
     // component-wise vector divide assign
     friend vec2<T> & operator /= ( vec2<T> &lhs, const vec2<T> & rhs ) {
         for(int i = 0; i < lhs.size(); i++) lhs._array[i] /= rhs._array[i];
-        return *this;
+        return lhs;
     }
 
     // component-wise vector add assign
@@ -678,7 +678,7 @@ public:
 // compute the dot product of two vectors
 template<class T>
 inline typename T::value_type dot( const T & lhs, const T & rhs ) { 
-    T::value_type r = 0;
+    typename T::value_type r = 0;
     for(int i = 0; i < lhs.size(); i++) r += lhs._array[i] * rhs._array[i];
     return r;
 }
@@ -686,15 +686,15 @@ inline typename T::value_type dot( const T & lhs, const T & rhs ) {
 // return the length of the provided vector
 template< class T>
 inline typename T::value_type length( const T & vec) {
-    T::value_type r = 0;
+    typename T::value_type r = 0;
     for(int i = 0; i < vec.size(); i++) r += vec._array[i]*vec._array[i]; 
-    return T::value_type(sqrt(r));
+    return typename T::value_type(sqrt(r));
 }
 
 // return the squared norm
 template< class T>
 inline typename T::value_type square_norm( const T & vec) {
-    T::value_type r = 0;
+    typename T::value_type r = 0;
     for(int i = 0; i < vec.size(); i++) r += vec._array[i]*vec._array[i]; 
     return r;
 }
@@ -702,11 +702,11 @@ inline typename T::value_type square_norm( const T & vec) {
 // return the normalized version of the vector
 template< class T>
 inline T normalize( const T & vec) { 
-    T::value_type sum(0);
+    typename T::value_type sum(0);
     T r;
     for(int i = 0; i < vec.size(); i++) 
         sum += vec._array[i] * vec._array[i];
-    sum = T::value_type(sqrt(sum));
+    sum = typename T::value_type(sqrt(sum));
     if (sum > 0)
         for(int i = 0; i < vec.size(); i++) 
             r._array[i] = vec._array[i] / sum;

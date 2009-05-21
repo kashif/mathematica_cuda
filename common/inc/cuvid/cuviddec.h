@@ -47,7 +47,7 @@ extern "C" {
 typedef void *CUvideodecoder;
 typedef struct _CUcontextlock_st *CUvideoctxlock;
 
-typedef enum {
+typedef enum cudaVideoCodec_enum {
     cudaVideoCodec_MPEG1=0,
     cudaVideoCodec_MPEG2,
     cudaVideoCodec_MPEG4,
@@ -55,22 +55,29 @@ typedef enum {
     cudaVideoCodec_H264,
 } cudaVideoCodec;
 
-typedef enum {
+typedef enum cudaVideoSurfaceFormat_enum {
     cudaVideoSurfaceFormat_NV12=0,  // NV12 (currently the only supported output format)
 } cudaVideoSurfaceFormat;
 
-typedef enum {
+typedef enum cudaVideoDeinterlaceMode_enum {
     cudaVideoDeinterlaceMode_Weave=0,   // Weave both fields (no deinterlacing)
     cudaVideoDeinterlaceMode_Bob,       // Drop one field
     cudaVideoDeinterlaceMode_Adaptive,  // Adaptive deinterlacing
 } cudaVideoDeinterlaceMode;
 
-typedef enum {
+typedef enum cudaVideoChromaFormat_enum {
     cudaVideoChromaFormat_Monochrome=0,
     cudaVideoChromaFormat_420,
     cudaVideoChromaFormat_422,
     cudaVideoChromaFormat_444,
 } cudaVideoChromaFormat;
+
+typedef enum cudaVideoCreateFlags_enum {
+    cudaVideoCreate_Default = 0x00,     // Default operation mode: use dedicated video engines
+    cudaVideoCreate_PreferCUDA = 0x01,  // Use a CUDA-based decoder if faster than dedicated engines (requires a valid vidLock object for multi-threading)
+    cudaVideoCreate_PreferDXVA = 0x02,  // Go through DXVA internally if possible (requires D3D9 interop)
+} cudaVideoCreateFlags;
+
 
 typedef struct _CUVIDDECODECREATEINFO
 {
@@ -80,7 +87,8 @@ typedef struct _CUVIDDECODECREATEINFO
     unsigned long ulNumDecodeSurfaces;  // Maximum number of internal decode surfaces
     cudaVideoCodec CodecType;        // cudaVideoCodec_XXX
     cudaVideoChromaFormat ChromaFormat; // cudaVideoChromaFormat_XXX (only 4:2:0 is currently supported)
-    unsigned long Reserved1[8];     // Reserved for future use - set to zero
+    unsigned long ulCreationFlags;  // Decoder creation flags (cudaVideoCreateFlags_XXX)
+    unsigned long Reserved1[7];     // Reserved for future use - set to zero
     // Output format
     cudaVideoSurfaceFormat OutputFormat;       // cudaVideoSurfaceFormat_XXX
     cudaVideoDeinterlaceMode DeinterlaceMode;  // cudaVideoDeinterlaceMode_XXX
@@ -212,6 +220,7 @@ typedef struct _CUVIDVC1PICPARAMS
     int range_mapy;
     int range_mapuv_flag;
     int range_mapuv;
+    int rangeredfrm;    // range reduction state
 } CUVIDVC1PICPARAMS;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,7 +264,8 @@ typedef struct _CUVIDPROCPARAMS
     int progressive_frame;  // Input is progressive (deinterlace_mode will be ignored)
     int second_field;       // Output the second field (ignored if deinterlace mode is Weave)
     int top_field_first;    // Input frame is top field first (1st field is top, 2nd field is bottom)
-    unsigned int Reserved[64]; // Reserved for future use
+    int unpaired_field;     // Input only contains one field (2nd field is invalid)
+    unsigned int Reserved[63]; // Reserved for future use
 } CUVIDPROCPARAMS;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -278,8 +288,6 @@ typedef struct _CUVIDPROCPARAMS
 // NOTE:
 // - In the current version, the cuda context MUST be created from a D3D device, using cuD3D9CtxCreate function.
 //   For multi-threaded operation, the D3D device must also be created with the D3DCREATE_MULTITHREADED flag.
-// - Decode and map/unmap calls may be made from different threads (may be desirable 
-//   for always keeping the decode queue full).
 // - There is a limit to how many pictures can be mapped simultaneously (ulNumOutputSurfaces)
 // - cuVidDecodePicture may block the calling thread if there are too many pictures pending 
 //   in the decode queue
@@ -312,6 +320,8 @@ extern CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, CUdevicept
 //    that can be passed to cuvidCtxLockCreate.
 //  - When using a floating context, all cuda calls should only be made within a cuvidCtxLock/cuvidCtxUnlock section.
 //
+// NOTE: This is a safer alternative to cuCtxPushCurrent and cuCtxPopCurrent, and is not related to video
+// decoder in any way (implemented as a critical section associated with cuCtx{Push|Pop}Current calls).
 
 extern CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
 extern CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck);
@@ -322,6 +332,17 @@ extern CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved
 
 #if defined(__cplusplus)
 }
+
+// Auto-lock helper for C++ applications
+class CCtxAutoLock
+{
+private:
+    CUvideoctxlock m_ctx;
+public:
+    CCtxAutoLock(CUvideoctxlock ctx):m_ctx(ctx) { cuvidCtxLock(m_ctx,0); }
+    ~CCtxAutoLock() { cuvidCtxUnlock(m_ctx,0); }
+};
+
 #endif /* __cplusplus */
 
 #endif // __CUDA_VIDEO_H__

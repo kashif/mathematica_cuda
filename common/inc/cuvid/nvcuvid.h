@@ -143,7 +143,8 @@ typedef int (CUDAAPI *PFNVIDSOURCECALLBACK)(void *, CUVIDSOURCEDATAPACKET *);
 
 typedef struct _CUVIDSOURCEPARAMS
 {
-    unsigned int uReserved1[8]; // Reserved for future use - set to zero
+    unsigned int ulClockRate;   // Timestamp units in Hz (0=default=10000000Hz)
+    unsigned int uReserved1[7]; // Reserved for future use - set to zero
     void *pUserData;    // Parameter passed in to the data handlers
     PFNVIDSOURCECALLBACK pfnVideoDataHandler;   // Called to deliver audio packets
     PFNVIDSOURCECALLBACK pfnAudioDataHandler;   // Called to deliver video packets
@@ -174,15 +175,22 @@ typedef struct _CUVIDPARSERDISPINFO
     CUvideotimestamp timestamp;
 } CUVIDPARSERDISPINFO;
 
+//
+// Parser callbacks
+// The parser will call these synchronously from within cuvidParseVideoData(), whenever a picture is ready to
+// be decoded and/or displayed.
+//
 typedef int (CUDAAPI *PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *);
 typedef int (CUDAAPI *PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *);
 typedef int (CUDAAPI *PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *);
 
 typedef struct _CUVIDPARSERPARAMS
 {
-    cudaVideoCodec CodecType;        // cudaVideoCodec_XXX
+    cudaVideoCodec CodecType;       // cudaVideoCodec_XXX
     unsigned int ulMaxNumDecodeSurfaces;    // Max # of decode surfaces (parser will cycle through these)
-    unsigned int uReserved1[8]; // Reserved for future use - set to NULL
+    unsigned int ulClockRate;       // Timestamp units in Hz (0=default=10000000Hz)
+    unsigned int ulErrorThreshold;  // % Error threshold (0-100) for calling pfnDecodePicture (100=always call pfnDecodePicture even if picture bitstream is fully corrupted)
+    unsigned int uReserved1[6]; // Reserved for future use - set to NULL
     void *pUserData;        // User data for callbacks
     PFNVIDSEQUENCECALLBACK pfnSequenceCallback; // Called before decoding frames and/or whenever there is a format change
     PFNVIDDECODECALLBACK pfnDecodePicture;      // Called when a picture is ready to be decoded (decode order)

@@ -1,5 +1,5 @@
 /*
- * Copyright 1993-2007 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NOTICE TO USER:
  *
@@ -60,17 +60,23 @@ using std::string;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
+#if _DEBUG
+#define CHECK_FBO     checkStatus(__FILE__, __LINE__, true)
+#else
+#define CHECK_FBO     true
+#endif
+
+
 
 class CheckRender
 {
 public:
-    CheckRender() {}
-	CheckRender(unsigned int width, unsigned int height, unsigned int bpp,
-    			bool bQAReadback, bool bUseFBO, bool bUsePBO);
+    CheckRender(unsigned int width, unsigned int height, unsigned int Bpp,
+   		bool bQAReadback, bool bUseFBO, bool bUsePBO);
 
-	virtual ~CheckRender();
+    virtual ~CheckRender();
 
-    virtual void allocateMemory( unsigned int width, unsigned int height, unsigned int bpp,
+    virtual void allocateMemory( unsigned int width, unsigned int height, unsigned int Bpp,
 	    	                    bool bQAReadback, bool bUseFBO, bool bUsePBO );
 
     virtual void setExecPath(char *path) {
@@ -80,46 +86,53 @@ public:
     virtual bool IsQAReadback() { return m_bQAReadback; }
     virtual bool IsFBO()        { return m_bUseFBO; }
     virtual bool IsPBO()        { return m_bUsePBO; }
+    virtual void * imageData()  { return m_pImageData; }
 
     // Interface to this class functions
     virtual void setPixelFormat(GLenum format) { m_PixelFormat = format; }
     virtual int  getPixelFormat() { return m_PixelFormat; }
     virtual bool checkStatus(const char *zfile, int line, bool silent) = 0;
-    virtual void freeResources() = 0;
-    virtual bool readback(GLuint width, GLuint height, void **ppReadBackBuf ) = 0;
-
-    virtual void savePPM(  const char *zfilename, bool bInvert, void **ppReadBuf );
-    virtual bool PPMvsPPM( const char *src_file, const char *ref_file, const int epsilon = 0 );
-
-	virtual void bindFragmentProgram()  = 0;
-	virtual void bindRenderPath()       = 0;
-	virtual void unbindRenderPath()     = 0;
-
-	virtual void bindTexture()          = 0;
-	virtual void unbindTexture()        = 0;
+    virtual bool readback( GLuint width, GLuint height ) = 0;
+	virtual bool readback( GLuint width, GLuint height, GLuint bufObject ) = 0;
+	virtual bool readback( GLuint width, GLuint height, unsigned char *membuf ) = 0;
 
 	virtual void bindReadback();
     virtual void unbindReadback();
 
+    virtual void savePGM(  const char *zfilename, bool bInvert, void **ppReadBuf );
+    virtual void savePPM(  const char *zfilename, bool bInvert, void **ppReadBuf );
+
+    virtual bool PGMvsPGM( const char *src_file, const char *ref_file, const float epsilon, const float threshold = 0.0f );
+    virtual bool PPMvsPPM( const char *src_file, const char *ref_file, const float epsilon, const float threshold = 0.0f );
+
+
+    void    setThresholdCompare(float value) { m_fThresholdCompare = value; }
+
+    virtual void dumpBin(void *data, unsigned int bytes, char *filename);
+    virtual bool compareBin2BinUint(const char *src_file, const char *ref_file, unsigned int nelements, const float epsilon, const float threshold);
+    virtual bool compareBin2BinFloat(const char *src_file, const char *ref_file, unsigned int nelements, const float epsilon, const float threshold);
+
 protected:
-    unsigned int m_Width, m_Height, m_Bpp;
-    void        *m_pImageData;  // This is the image data stored in system memory
-    bool         m_bQAReadback, m_bUseFBO, m_bUsePBO;
-    GLuint       m_pboReadback;
-    GLenum       m_PixelFormat;
-    char         m_ExecPath[256];
+    unsigned int  m_Width, m_Height, m_Bpp;
+    unsigned char *m_pImageData;  // This is the image data stored in system memory
+    bool          m_bQAReadback, m_bUseFBO, m_bUsePBO;
+    GLuint        m_pboReadback;
+    GLenum        m_PixelFormat;
+    float         m_fThresholdCompare;
+    char          m_ExecPath[256];
 };
 
 
 class CheckBackBuffer : public CheckRender
 {
 public:
-	CheckBackBuffer(unsigned int width, unsigned int height, unsigned int bpp);
+	CheckBackBuffer(unsigned int width, unsigned int height, unsigned int Bpp, bool bUseOpenGL = true);
 	virtual ~CheckBackBuffer();
 
 	virtual bool checkStatus(const char *zfile, int line, bool silent);
-    virtual void freeResources() {};
-    bool readback( GLuint width, GLuint height, void **ppReadBackBuf );
+    virtual bool readback( GLuint width, GLuint height );
+	virtual bool readback( GLuint width, GLuint height, GLuint bufObject );
+	virtual bool readback( GLuint width, GLuint height, unsigned char *membuf );
 
 private:
 	virtual void bindFragmentProgram() {}; 
@@ -153,84 +166,70 @@ struct fboConfig {
 };
 
 struct fboData {
-    GLuint tex; //color texture
+    GLuint colorTex; //color texture
     GLuint depthTex; //depth texture
-    GLuint fb; // render framebuffer
+    GLuint fb;      // render framebuffer
     GLuint resolveFB; //multisample resolve target
     GLuint colorRB; //color render buffer
     GLuint depthRB; // depth render buffer
 };
 
 
-// CheckFBO - render and verify contents of the FBO
-class CheckFBO: public CheckRender
+class CFrameBufferObject 
 {
 public:
-	CheckFBO(unsigned int width, unsigned int height, unsigned int bpp);
-	CheckFBO(unsigned int width, unsigned int height, unsigned int bpp, fboData &data, fboConfig &config);
+    CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, bool bUseFloat, GLenum eTarget);
+    CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, fboData &data, fboConfig &config, bool bUseFloat = false);
+    CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, fboData &data, fboConfig &config, bool bUseFloat, GLenum eTarget);
 
-	virtual ~CheckFBO();
+    virtual ~CFrameBufferObject();
 
-	virtual bool checkStatus(const char *zfile, int line, bool silent);
-	virtual void freeResources();
-	virtual bool readback( GLuint width, GLuint height, void **ppReadBackBuf );
+    GLuint createTexture(GLenum target, int w, int h, GLint internalformat, GLenum format);
+    void    attachTexture(  GLenum texTarget, 
+                            GLuint texId, 
+                            GLenum attachment   = GL_COLOR_ATTACHMENT0_EXT, 
+                            int mipLevel        = 0, 
+                            int zSlice          = 0);
 
-	bool initialize(unsigned width, unsigned height, fboConfig & rConfigFBO, fboData & rActiveFBO);
-	bool create( GLuint width, GLuint height, fboConfig &config, fboData &data );
-	bool createMSAA( GLuint width, GLuint height, fboConfig *p_config, fboData *p_data );
-	bool createCSAA( GLuint width, GLuint height, fboConfig *p_config, fboData *p_data );
+    bool initialize(unsigned width, unsigned height, fboConfig & rConfigFBO, fboData & rActiveFBO);
+    bool create( GLuint width, GLuint height, fboConfig &config, fboData &data );
+    bool createMSAA( GLuint width, GLuint height, fboConfig *p_config, fboData *p_data );
+    bool createCSAA( GLuint width, GLuint height, fboConfig *p_config, fboData *p_data );
 
-	// bind the fragment program we'll just render the quad as
-	virtual void bindFragmentProgram()
-	{
-        if (!m_bQAReadback || !m_bUseFBO) {
-            printf("CheckFBO::bindFragmentProgram() uninitialized!\n");
-            return;
-        }
-		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, m_textureProgram);
-		glEnable(GL_FRAGMENT_PROGRAM_ARB);
-	}
+    virtual void freeResources();
+    virtual bool checkStatus(const char *zfile, int line, bool silent);
+
+    virtual void renderQuad(int width, int height, GLenum eTarget);
+
+    // bind to the Fragment Program
+    void bindFragmentProgram() {
+       glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, m_textureProgram);
+       glEnable(GL_FRAGMENT_PROGRAM_ARB);
+    }
 
 	// bind to the FrameBuffer Object
-	virtual void bindRenderPath()
-	{
-        if (!m_bQAReadback || !m_bUseFBO) {
-            printf("CheckFBO::bindReaderPath() uninitialized!\n");
-            return;
-        }
+	void bindRenderPath() {
 		glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, m_fboData.fb );
 	}
 
 	// release current FrameBuffer Object
-	virtual void unbindRenderPath()
-	{
-        if (!m_bQAReadback || !m_bUseFBO) {
-            printf("CheckFBO::unbindReaderPath() uninitialized!\n");
-            return;
-        }
+	void unbindRenderPath() {
 		glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 );
 	}
 
 	// bind to the FBO to Texture
-	virtual void bindTexture()
-	{
-        if (!m_bQAReadback || !m_bUseFBO) {
-            printf("CheckFBO::v() uninitialized!\n");
-            return;
-        }
-		glBindTexture( GL_TEXTURE_2D, m_fboData.tex );
+	void bindTexture() {
+		glBindTexture( m_eGLTarget, m_fboData.colorTex );
 	}
 
 	// release this bind
-	virtual void unbindTexture()
-	{
-        if (!m_bQAReadback || !m_bUseFBO) {
-            printf("CheckFBO::unbindTexture() uninitialized!\n");
-            return;
-        }
-		glBindTexture( GL_TEXTURE_2D, 0 );
+	void unbindTexture() {
+		glBindTexture( m_eGLTarget, 0 );
 	}
 
+	GLuint getFbo()      { return m_fboData.fb; }
+	GLuint getTex()      { return m_fboData.colorTex; }
+	GLuint getDepthTex() { return m_fboData.depthTex; }
 
 private:
 	fboData		m_fboData;
@@ -238,6 +237,28 @@ private:
 
 	GLuint		m_textureProgram;
 	GLuint		m_overlayProgram;
+
+	bool		m_bUseFloat;
+	GLenum      m_eGLTarget;
+};
+
+
+// CheckFBO - render and verify contents of the FBO
+class CheckFBO: public CheckRender
+{
+public:
+	CheckFBO(unsigned int width, unsigned int height, unsigned int Bpp);
+	CheckFBO(unsigned int width, unsigned int height, unsigned int Bpp, CFrameBufferObject *pFrameBufferObject);
+
+	virtual ~CheckFBO();
+
+	virtual bool checkStatus(const char *zfile, int line, bool silent);
+	virtual bool readback( GLuint width, GLuint height );
+	virtual bool readback( GLuint width, GLuint height, GLuint bufObject );
+	virtual bool readback( GLuint width, GLuint height, unsigned char *membuf );
+
+private:
+	CFrameBufferObject *m_pFrameBufferObject;
 };
 
 #endif // _RENDERCHECK_GL_H_

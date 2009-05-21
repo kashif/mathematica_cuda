@@ -165,7 +165,7 @@ public:
 
     vec4<T> get_column(int c) const {
         vec4<T> v;
-        for (int i = 0; i < 4; i++) v[i] = element(i,r);
+        for (int i = 0; i < 4; i++) v[i] = element(i,c);
         return v;
     }
 

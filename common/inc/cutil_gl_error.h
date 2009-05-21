@@ -80,6 +80,9 @@ cutCheckErrorGL( const char* file, const int line)
 	if( CUTFalse == cutCheckErrorGL( __FILE__, __LINE__)) {                  \
 	exit(EXIT_FAILURE);                                                  \
 	}
+#else
+
+#define CUT_CHECK_ERROR_GL()                                               \
 
 #endif // _DEBUG
 

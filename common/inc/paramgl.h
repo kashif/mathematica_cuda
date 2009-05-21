@@ -22,33 +22,44 @@ void glPrintShadowed(int x, int y, const char *s, void *font, float *color);
 
 class ParamListGL : public ParamList {
 public:
-  ParamListGL(char *name = "");
+    ParamListGL(const char *name = "");
 
-  void Render(int x, int y, bool shadow = false);
-  bool Mouse(int x, int y, int button=GLUT_LEFT_BUTTON, int state=GLUT_DOWN);
-  bool Motion(int x, int y);
-  void Special(int key, int x, int y);
+    void Render(int x, int y, bool shadow = false);
+    bool Mouse(int x, int y, int button=GLUT_LEFT_BUTTON, int state=GLUT_DOWN);
+    bool Motion(int x, int y);
+    void Special(int key, int x, int y);
 
-  void SetSelectedColor(float r, float g, float b) { text_col_selected[0] = r; text_col_selected[1] = g; text_col_selected[2] = b; }
-  void SetUnSelectedColor(float r, float g, float b) { text_col_unselected[0] = r; text_col_unselected[1] = g; text_col_unselected[2] = b; }
+    void SetFont(void *font, int height) { m_font = font; m_font_h = height; }
 
-  int bar_x;
-  int bar_w;
-  int bar_h;
-  int text_x;
-  int separation;
-  int value_x;
-  int font_h;
-  int start_x, start_y;
-  int bar_offset;
+    void SetSelectedColor(float r, float g, float b) { m_text_color_selected = Color(r, g, b); }
+    void SetUnSelectedColor(float r, float g, float b) { m_text_color_unselected = Color(r, g, b); }
+    void SetBarColorInner(float r, float g, float b) { m_bar_color_inner = Color(r, g, b); }
+    void SetBarColorOuter(float r, float g, float b) { m_bar_color_outer = Color(r, g, b); }
 
-  float text_col_selected[3];
-  float text_col_unselected[3];
-  float text_col_shadow[3];
-  float bar_col_outer[3];
-  float bar_col_inner[3];
+private:
+    void *m_font;
+    int m_font_h;       // font height
 
-  void *font;
+    int m_bar_x;        // bar start x position
+    int m_bar_w;        // bar width
+    int m_bar_h;        // bar height
+    int m_text_x;       // text start x position
+    int m_separation;   // bar separation in y
+    int m_value_x;      // value text x position
+    int m_bar_offset;   // bar offset in y
+
+    int m_start_x, m_start_y;
+
+    struct Color {
+        Color(float _r, float _g, float _b) { r = _r; g = _g; b = _b; }
+        float r, g, b;
+    };
+
+    Color m_text_color_selected;
+    Color m_text_color_unselected;
+    Color m_text_color_shadow;
+    Color m_bar_color_outer;
+    Color m_bar_color_inner;
 };
 
 #endif

@@ -35,24 +35,13 @@
 
 .SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .tm
 
-# detect if 32 bit or 64 bit system
-HP_64 =	$(shell uname -m | grep 64)
-
-# detect OS
-OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
-OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
-# 'linux' is output for Linux system, 'darwin' for OS X
-DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
-
 # Mathematica settings
 VERSION := 7.0
 MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
-
 SYS := Linux-x86-64
 MATHLIB := -lML64i3 -lm -lpthread -lrt -lstdc++
 CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
 MPREP := $(CADDSDIR)/mprep
-
 
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
@@ -62,6 +51,12 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 ifdef cuda-install
 	CUDA_INSTALL_PATH := $(cuda-install)
 endif
+
+# detect OS
+OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
+OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
+# 'linux' is output for Linux system, 'darwin' for OS X
+DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
 
 # Basic directory setup for SDK
 # (override directories only if they are not already defined)
@@ -81,6 +76,9 @@ LINK       := g++ -fPIC
 
 # Includes
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/inc -I$(CADDSDIR)
+
+# architecture flag for cubin build
+CUBIN_ARCH_FLAG := -m32
 
 # Warning flags
 CXXWARN_FLAGS := \
@@ -134,6 +132,9 @@ endif
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG := -m32
 
+# detect if 32 bit or 64 bit system
+HP_64 =	$(shell uname -m | grep 64)
+
 # OpenGL is used or not (if it is used, then it is necessary to include GLEW)
 ifeq ($(USEGLLIB),1)
 
@@ -183,11 +184,18 @@ ifeq ($(USECUDPP), 1)
 endif
 
 # Libs
-LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR) $(MATHLIB)
-ifeq ($(USEDRVAPI),1)
-   LIB += -lcuda ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) ${LIB}
+LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+
+# If dynamically linking to CUDA and CUDART, we exclude the libraries from the LIB
+ifeq ($(USECUDADYNLIB),1)
+     LIB += ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB} 
 else
-   LIB += -lcudart ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) ${LIB}
+# static linking, we will statically link against CUDA and CUDART
+  ifeq ($(USEDRVAPI),1)
+     LIB += -lcuda   ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB} 
+  else
+     LIB += -lcudart ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB}
+  endif
 endif
 
 ifeq ($(USECUFFT),1)
@@ -210,7 +218,7 @@ endif
 ifneq ($(STATIC_LIB),)
 	TARGETDIR := $(LIBDIR)
 	TARGET   := $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
-	LINKLINE  = ar qv $(TARGET) $(OBJS) 
+	LINKLINE  = ar rucv $(TARGET) $(OBJS) 
 else
 	LIB += -lcutil$(LIBSUFFIX)
 	# Device emulation configuration
