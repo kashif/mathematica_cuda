@@ -35,14 +35,6 @@
 
 .SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .tm
 
-# Mathematica settings
-VERSION := 7.0
-MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
-SYS := Linux-x86-64
-MATHLIB := -lML64i3 -lm -lpthread -lrt -lstdc++
-CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
-MPREP := $(CADDSDIR)/mprep
-
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
 
@@ -57,6 +49,23 @@ OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
 OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 # 'linux' is output for Linux system, 'darwin' for OS X
 DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
+
+# Mathematica settings
+VERSION := 7.0
+ifneq ($(DARWIN),)
+	MLINKDIR := /Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit
+	SYS := MacOSX-x86-64
+	MATHLIB := -lMLi3 -lstdc++
+	CADDSDIR := ${MLINKDIR}/CompilerAdditions
+	EXTRA_CFLAGS := -Wno-long-double
+else
+	MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
+	SYS := Linux-x86-64
+	MATHLIB := -lML64i3 -lm -lpthread -lrt -lstdc++
+	CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
+	EXTRA_CFLAGS :=
+endif
+MPREP := $(CADDSDIR)/mprep
 
 # Basic directory setup for SDK
 # (override directories only if they are not already defined)
@@ -105,7 +114,7 @@ CWARN_FLAGS := $(CXXWARN_FLAGS) \
 
 # Compiler-specific flags
 NVCCFLAGS := 
-CXXFLAGS  := $(CXXWARN_FLAGS)
+CXXFLAGS  := $(CXXWARN_FLAGS) $(EXTRA_CFLAGS)
 CFLAGS    := $(CWARN_FLAGS)
 
 # Common flags
