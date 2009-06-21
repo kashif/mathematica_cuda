@@ -9,7 +9,15 @@ System Requirements Mac OS X:
   CUDA toolkit
   Mathematica
   
-Several environment variables need to be defined in the installation:
-DYLD_LIBRARY_PATH needs to contain /usr/local/cuda/lib.
+  Several environment variables need to be defined in the installation:
+  DYLD_LIBRARY_PATH needs to contain /usr/local/cuda/lib.
+
+System Requirments Linux:
+  CUDA-enabled GPU
+  Fedora 10, RHEL 4.7 & 5.3, SLED 10.2 & 11.0, OpenSUSE 11.1 or Ubuntu 8.10 & 9.04
+  CUDA toolkit
+  Mathematica
+
+  LD_LIBRARY_PATH needs to contain /usr/local/cuda/lib.
 
 
