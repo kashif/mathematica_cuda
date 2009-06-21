@@ -33,7 +33,7 @@
 #
 ################################################################################
 
-.SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .tm
+.SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .ptx .tm
 
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
@@ -87,7 +87,7 @@ LINK       := g++ -fPIC
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/inc -I$(CADDSDIR)
 
 # architecture flag for cubin build
-CUBIN_ARCH_FLAG := -m32
+CUBIN_ARCH_FLAG := 
 
 # Warning flags
 CXXWARN_FLAGS := \
@@ -139,7 +139,7 @@ endif
 #NVCCFLAGS += $(SMVERSIONFLAGS)
 
 # architecture flag for cubin build
-CUBIN_ARCH_FLAG := -m32
+CUBIN_ARCH_FLAG :=
 
 # detect if 32 bit or 64 bit system
 HP_64 =	$(shell uname -m | grep 64)
@@ -301,6 +301,12 @@ CUBINDIR := $(SRCDIR)data
 CUBINS +=  $(patsubst %.cu,$(CUBINDIR)/%.cubin,$(notdir $(CUBINFILES)))
 
 ################################################################################
+# Set up PTX output files
+################################################################################
+PTXDIR := $(SRCDIR)data
+PTXBINS +=  $(patsubst %.cu,$(PTXDIR)/%.ptx,$(notdir $(PTXFILES)))
+
+################################################################################
 # Rules
 ################################################################################
 $(SRCDIR)%tm.c : $(SRCDIR)%.tm
@@ -317,6 +323,9 @@ $(OBJDIR)/%.cu.o : $(SRCDIR)%.cu $(CU_DEPS)
 
 $(CUBINDIR)/%.cubin : $(SRCDIR)%.cu cubindirectory
 	$(VERBOSE)$(NVCC) $(CUBIN_ARCH_FLAG) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -cubin $<
+
+$(PTXDIR)/%.ptx : $(SRCDIR)%.cu ptxdirectory
+	$(VERBOSE)$(NVCC) $(CUBIN_ARCH_FLAG) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -ptx $<
 
 #
 # The following definition is a template that gets instantiated for each SM
@@ -343,11 +352,14 @@ endef
 # function interprets it as make commands.
 $(foreach smver,$(SM_VERSIONS),$(eval $(call SMVERSION_template,$(smver))))
 
-$(TARGET): makedirectories $(OBJS) $(CUBINS) Makefile
+$(TARGET): makedirectories $(OBJS) $(CUBINS) $(PTXBINS) Makefile
 	$(VERBOSE)$(LINKLINE)
 
 cubindirectory:
 	$(VERBOSE)mkdir -p $(CUBINDIR)
+
+ptxdirectory:
+	$(VERBOSE)mkdir -p $(PTXDIR)
 
 makedirectories:
 	$(VERBOSE)mkdir -p $(LIBDIR)
@@ -362,6 +374,7 @@ tidy :
 clean : tidy
 	$(VERBOSE)rm -f $(OBJS)
 	$(VERBOSE)rm -f $(CUBINS)
+	$(VERBOSE)rm -f $(PTXBINS)
 	$(VERBOSE)rm -f $(TARGET)
 	$(VERBOSE)rm -f $(NVCC_KEEP_CLEAN)
 

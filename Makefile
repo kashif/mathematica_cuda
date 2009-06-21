@@ -1,7 +1,8 @@
+# CUDA SDK Version 2.20.0116.0120
 ifeq ($(emu), 1)
-  PROJECTS := $(shell find projects -name Makefile | xargs grep -L 'USEDRVAPI')
+  PROJECTS := $(shell find src -name Makefile | xargs grep -L 'USEDRVAPI')
 else
-  PROJECTS := $(shell find projects -name Makefile)
+  PROJECTS := $(shell find src -name Makefile)
 endif
 
 %.ph_build : lib/libcutil.so lib/libparamgl.so lib/librendercheckgl.so
@@ -26,8 +27,8 @@ lib/librendercheckgl.so:
 	@make -C common -f Makefile_rendercheckgl
 
 tidy:
-	@find | egrep "#" | xargs rm -f
-	@find | egrep "\~" | xargs rm -f
+	@find * | egrep "#" | xargs rm -f
+	@find * | egrep "\~" | xargs rm -f
 
 clean: tidy $(addsuffix .ph_clean,$(PROJECTS))
 	@make -C common clean

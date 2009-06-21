@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     else
         cudaSetDevice( cutGetMaxGflopsDeviceId() );
 
-	int result = MLMain(argc, argv);
+    int result = MLMain(argc, argv);
     cutilExit(argc, argv);
     return result;
 }
@@ -41,7 +41,7 @@ void scalarProd(void)
     float *d_A, *d_B, *d_C;
 
     char **heads_A, **heads_B;
-	int *dims_A, *dims_B;
+    int *dims_A, *dims_B;
     int rank_A, rank_B;
 
     if(! MLGetReal32Array(stdlink, &h_A, &dims_A, &heads_A, &rank_A))
@@ -54,19 +54,17 @@ void scalarProd(void)
         return;
     }
     
+    //Initializing data
     h_C_GPU = (float *)malloc(dims_A[0]*sizeof(float));
-    
 
-    cutilSafeCall( cudaMalloc((void **)&d_A, 
-                                dims_A[0]*dims_A[1]*sizeof(float)) );
-    cutilSafeCall( cudaMalloc((void **)&d_B, 
-                                dims_A[0]*dims_A[1]*sizeof(float)) );
+    //Allocating GPU memory
+    cutilSafeCall( cudaMalloc((void **)&d_A, dims_A[0]*dims_A[1]*sizeof(float)) );
+    cutilSafeCall( cudaMalloc((void **)&d_B, dims_A[0]*dims_A[1]*sizeof(float)) );
     cutilSafeCall( cudaMalloc((void **)&d_C, dims_A[0]*sizeof(float)) );
 
     //Copy options data to GPU memory for further processing 
-    cutilSafeCall( cudaMemcpy(d_A, h_A, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
-    cutilSafeCall( cudaMemcpy(d_B, h_B, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyHostToDevice) );
-
+    cutilSafeCall( cudaMemcpy(d_A, h_A, dims_A[0]*dims_A[1]*sizeof(float),cudaMemcpyHostToDevice) );
+    cutilSafeCall( cudaMemcpy(d_B, h_B, dims_A[0]*dims_A[1]*sizeof(float),cudaMemcpyHostToDevice) );
 
     cutilSafeCall( cudaThreadSynchronize() );
     scalarProdGPU<<<128, 256>>>(d_C, d_A, d_B, dims_A[0], dims_A[1]);

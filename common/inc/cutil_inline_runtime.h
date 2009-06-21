@@ -141,6 +141,7 @@ inline void __cutilSafeMalloc( void *pointer, const char *file, const int line )
 
 #if __DEVICE_EMULATION__
     inline void cutilDeviceInit(int ARGC, char **ARGV) { }
+    inline void cutilChooseCudaDevice(int ARGC, char **ARGV) { }
 #else
     inline void cutilDeviceInit(int ARGC, char **ARGV)
     {
@@ -164,6 +165,18 @@ inline void __cutilSafeMalloc( void *pointer, const char *file, const int line )
             fprintf(stderr, "Using device %d: %s\n", dev, deviceProp.name);
         cutilSafeCall(cudaSetDevice(dev));
     }
+
+    // General initialization call to pick the best CUDA Device
+    inline void cutilChooseCudaDevice(int argc, char **argv)
+    {
+        // If the command-line has a device number specified, use it
+        if( cutCheckCmdLineFlag(argc, (const char**)argv, "device") ) {
+            cutilDeviceInit(argc, argv);
+        } else {
+            // Otherwise pick the device with highest Gflops/s
+            cudaSetDevice( cutGetMaxGflopsDeviceId() );
+        }
+    }
 #endif
 
 
@@ -181,6 +194,35 @@ inline void cutilCudaCheckCtxLost(const char *errorMessage, const char *file, co
         fprintf(stderr, "CCUDA error: %s in file '%s' in line %i : %s.\n",
         errorMessage, file, line, cudaGetErrorString( err) );
         exit(-1);
+    }
+}
+
+// General check for CUDA GPU SM Capabilities
+inline bool cutilCudaCapabilities(int major_version, int minor_version)
+{
+    cudaDeviceProp deviceProp;
+    deviceProp.major = 0;
+    deviceProp.minor = 0;
+    int dev;
+
+#ifdef __DEVICE_EMULATION__
+    printf("> Compute Device Emulation Mode \n");
+#endif
+
+    cutilSafeCall( cudaGetDevice(&dev) );
+    cutilSafeCall( cudaGetDeviceProperties(&deviceProp, dev));
+
+    if(deviceProp.major >= major_version && deviceProp.minor >= minor_version)
+    {
+        printf("> Compute SM %d.%d Device Detected\n", deviceProp.major, deviceProp.minor);
+        printf("> Device %d: <%s>\n", dev, deviceProp.name);
+        return true;
+    }
+    else
+    {
+        printf("There is no device supporting CUDA compute capability %d.%d.\n", major_version, minor_version);
+        printf("TEST PASSED\n");
+        return false;
     }
 }
 

@@ -707,7 +707,7 @@ cutFindFilePath(const char* filename, const char* executable_path)
         ++exe;
     size_t executable_len = strlen(exe);
     size_t executable_dir_len = executable_path_len - executable_len;
-    const char projects_relative_path[] = "../../../projects/";
+    const char projects_relative_path[] = "../../../src/";
     size_t projects_relative_path_len = strlen(projects_relative_path);
     file_path = 
       (char*) malloc( sizeof(char) * (executable_path_len +

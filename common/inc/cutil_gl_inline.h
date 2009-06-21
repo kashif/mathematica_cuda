@@ -15,6 +15,7 @@
 #if __DEVICE_EMULATION__
     inline void cutilGLDeviceInit(int ARGC, char **ARGV) { }
     inline void cutilGLDeviceInitDrv(int cuDevice, int ARGC, char **ARGV) { } 
+    inline void cutilChooseCudaGLDevice(int ARGC, char **ARGV) { }
 #else
     inline void cutilGLDeviceInit(int ARGC, char **ARGV)
     {
@@ -60,6 +61,19 @@
         if (cutCheckCmdLineFlag(ARGC, (const char **) ARGV, "quiet") == CUTFalse)
             fprintf(stderr, "Using device %d: %s\n", dev, name);
     }
+
+    // This function will pick the best CUDA device available with OpenGL interop
+    inline void cutilChooseCudaGLDevice(int argc, char **argv)
+    {
+        // If the command-line has a device number specified, use it
+        if( cutCheckCmdLineFlag(argc, (const char**)argv, "device") ) {
+            cutilGLDeviceInit(argc, argv);
+        } else {
+            // Otherwise pick the device with highest Gflops/s
+            cudaGLSetGLDevice( cutGetMaxGflopsDeviceId() );
+        }
+    }
+
 #endif
 
 #endif // _CUTIL_GL_INLINE_H_

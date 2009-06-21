@@ -1,12 +1,12 @@
-This project demonstrates the use of CUDA libraries and the accessing of user CUDA code from Mathematica.
+This project demonstrates the use of CUDA libraries and the accessing of user CUDA code from Mathematica via MathLink.
 
-This has been tested with Mathematica 7.0.1 and CUDA 2.2 under Linux and Mac (and not yet for Windows).
+This has been tested with Mathematica 7.0.1 and CUDA 2.2 and above under Linux and Mac (and not yet for Windows).
 
 System Requirements Mac OS X:
   CUDA-enabled GPU
   Mac OS X v. 10.5.2 or later
   The gcc compiler and toolchain installed via Xcode
-  CUDA software
+  CUDA toolkit
   Mathematica
   
 Several environment variables need to be defined in the installation:

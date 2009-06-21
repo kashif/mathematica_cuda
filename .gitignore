@@ -1,6 +1,6 @@
 bin/*
 lib/*
 common/obj
-projects/*/obj
+src/*/obj
 *.linkinfo
 

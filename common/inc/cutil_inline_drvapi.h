@@ -5,12 +5,44 @@
 #include <string.h>
 #include <stdlib.h>
 
+
 // We define these calls here, so the user doesn't need to include __FILE__ and __LINE__
 // The advantage is the developers gets to use the inline function so they can debug
-#define cutilDrvSafeCallNoSync(err)  __cuSafeCallNoSync  (err, __FILE__, __LINE__)
-#define cutilDrvSafeCall(err)        __cuSafeCall        (err, __FILE__, __LINE__)
-#define cutilDrvCtxSync()            __cuCtxSync         (__FILE__, __LINE__)
-#define cutilDrvCheckMsg(msg)        __cuCheckMsg        (msg, __FILE__, __LINE__)
+#define cutilDrvSafeCallNoSync(err)     __cuSafeCallNoSync  (err, __FILE__, __LINE__)
+#define cutilDrvSafeCall(err)           __cuSafeCall        (err, __FILE__, __LINE__)
+#define cutilDrvCtxSync()               __cuCtxSync         (__FILE__, __LINE__)
+#define cutilDrvCheckMsg(msg)           __cuCheckMsg        (msg, __FILE__, __LINE__)
+#define cutilDrvAlignOffset(offset, alignment)  ( offset = (offset + (alignment-1)) & ~((alignment-1)) )
+
+// This function returns the best GPU (with maximum GFLOPS)
+inline int cutilDrvGetMaxGflopsDeviceId()
+{
+        int device_count = 0;
+        CUdevice current_device = 0;
+
+        cuInit(0);
+        CU_SAFE_CALL_NO_SYNC(cuDeviceGetCount(&device_count));
+
+        CUdevice max_gflops_device = 0;
+        int max_gflops = 0;
+        int multiProcessorCount, clockRate;
+	
+	while( current_device < device_count )
+	{
+		CU_SAFE_CALL_NO_SYNC( cuDeviceGetAttribute( &multiProcessorCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, current_device ) );
+		CU_SAFE_CALL_NO_SYNC( cuDeviceGetAttribute( &clockRate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, current_device ) );
+
+		int gflops = multiProcessorCount * clockRate;
+		if( gflops > max_gflops )
+		{
+			max_gflops        = gflops;
+			max_gflops_device = current_device;
+		}
+		++current_device;
+	}
+
+	return max_gflops_device;
+}
 
 // These are the inline versions for all of the CUTIL functions
 inline void __cuSafeCallNoSync( CUresult err, const char *file, const int line )
@@ -89,6 +121,35 @@ inline void cutilDrvCudaCheckCtxLost(const char *errorMessage, const char *file,
                 errorMessage, file, line );
         exit(-1);
     } 
+}
+
+// General check for CUDA GPU SM Capabilities
+inline bool cutilDrvCudaCapabilities(int major_version, int minor_version)
+{
+    int major, minor;
+    int dev;
+    char device_name[256];
+
+#ifdef __DEVICE_EMULATION__
+    printf("> Compute Device Emulation Mode \n");
+#endif
+
+    cutilDrvSafeCallNoSync( cuDeviceGet(&dev, 0) );
+    cutilDrvSafeCallNoSync( cuDeviceComputeCapability(&major, &minor, dev));
+    cutilDrvSafeCallNoSync( cuDeviceGetName(device_name, 256, dev) ); 
+
+    if(major >= major_version && minor >= minor_version)
+    {
+        printf("> Compute SM %d.%d Device Detected\n", major, minor);
+        printf("> Device %d: <%s>\n", dev, device_name);
+        return true;
+    }
+    else
+    {
+        printf("There is no device supporting CUDA compute capability %d.%d.\n", major_version, minor_version);
+        printf("TEST PASSED\n");
+        return false;
+    }
 }
 
 #endif // _CUTIL_INLINE_FUNCTIONS_DRVAPI_H_
