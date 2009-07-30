@@ -50,20 +50,29 @@ OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 # 'linux' is output for Linux system, 'darwin' for OS X
 DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
 
+# detect if 32 bit or 64 bit system
+HP_64 =	$(shell uname -m | grep 64)
+
 # Mathematica settings
 VERSION := 7.0
 ifneq ($(DARWIN),)
-	MLINKDIR := /Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit
-	SYS := MacOSX-x86-64
-	MATHLIB := -lMLi3 -lstdc++
-	CADDSDIR := ${MLINKDIR}/CompilerAdditions
-	EXTRA_CFLAGS := -Wno-long-double
+    MLINKDIR := /Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit
+    SYS := MacOSX-x86-64
+    MATHLIB := -lMLi3 -lstdc++
+    CADDSDIR := ${MLINKDIR}/CompilerAdditions
+    EXTRA_CFLAGS := -Wno-long-double
 else
-	MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
-	SYS := Linux-x86-64
-	MATHLIB := -lML64i3 -lm -lpthread -lrt -lstdc++
-	CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
-	EXTRA_CFLAGS :=
+    MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
+    ifeq "$(strip $(HP_64))" ""
+        SYS := Linux
+        MATHLIB := -lML32i3
+    else
+        SYS := Linux-x86-64
+        MATHLIB := -lML64i3
+    endif
+    MATHLIB += -lm -lpthread -lrt -lstdc++
+    CADDSDIR := $(MLINKDIR)/$(SYS)/CompilerAdditions
+    EXTRA_CFLAGS :=
 endif
 MPREP := $(CADDSDIR)/mprep
 
@@ -78,7 +87,12 @@ LIBDIR     := $(ROOTDIR)/../lib
 COMMONDIR  := $(ROOTDIR)/../common
 
 # Compilers
-NVCC       := $(CUDA_INSTALL_PATH)/bin/nvcc 
+ifeq "$(strip $(HP_64))" ""
+   NVCC    := $(CUDA_INSTALL_PATH)/bin/nvcc 
+else
+   NVCC    := $(CUDA_INSTALL_PATH)/bin/nvcc 
+endif
+
 CXX        := g++
 CC         := gcc
 LINK       := g++ -fPIC
@@ -87,7 +101,7 @@ LINK       := g++ -fPIC
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/inc -I$(CADDSDIR)
 
 # architecture flag for cubin build
-CUBIN_ARCH_FLAG := 
+CUBIN_ARCH_FLAG :=
 
 # Warning flags
 CXXWARN_FLAGS := \
@@ -124,10 +138,12 @@ COMMONFLAGS += $(INCLUDES) -DUNIX
 ifeq ($(dbg),1)
 	COMMONFLAGS += -g
 	NVCCFLAGS   += -D_DEBUG
+	CXXFLAGS    += -D_DEBUG
+	CFLAGS      += -D_DEBUG
 	BINSUBDIR   := debug
 	LIBSUFFIX   := D
 else 
-	COMMONFLAGS += -O3 
+	COMMONFLAGS += -O2 
 	BINSUBDIR   := release
 	LIBSUFFIX   :=
 	NVCCFLAGS   += --compiler-options -fno-strict-aliasing
@@ -140,9 +156,6 @@ endif
 
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG :=
-
-# detect if 32 bit or 64 bit system
-HP_64 =	$(shell uname -m | grep 64)
 
 # OpenGL is used or not (if it is used, then it is necessary to include GLEW)
 ifeq ($(USEGLLIB),1)
@@ -193,11 +206,15 @@ ifeq ($(USECUDPP), 1)
 endif
 
 # Libs
-LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+ifeq "$(strip $(HP_64))" ""
+   LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+else
+   LIB       := -L$(CUDA_INSTALL_PATH)/lib64 -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+endif
 
 # If dynamically linking to CUDA and CUDART, we exclude the libraries from the LIB
 ifeq ($(USECUDADYNLIB),1)
-     LIB += ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB} 
+     LIB += ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB} -ldl -rdynamic 
 else
 # static linking, we will statically link against CUDA and CUDART
   ifeq ($(USEDRVAPI),1)
@@ -229,7 +246,9 @@ ifneq ($(STATIC_LIB),)
 	TARGET   := $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
 	LINKLINE  = ar rucv $(TARGET) $(OBJS) 
 else
-	LIB += -lcutil$(LIBSUFFIX)
+	ifneq ($(OMIT_CUTIL_LIB),1)
+		LIB += -lcutil$(LIBSUFFIX)
+	endif
 	# Device emulation configuration
 	ifeq ($(emu), 1)
 		NVCCFLAGS   += -deviceemu
@@ -270,11 +289,6 @@ endif
 # Add cudacc flags
 NVCCFLAGS += $(CUDACCFLAGS)
 
-# workaround for mac os x cuda 1.1 compiler issues
-ifneq ($(DARWIN),)
-	NVCCFLAGS += --host-compilation=C
-endif
-
 # Add common flags
 NVCCFLAGS += $(COMMONFLAGS)
 CXXFLAGS  += $(COMMONFLAGS)
@@ -295,7 +309,7 @@ OBJS +=  $(patsubst %.cu,$(OBJDIR)/%.cu.o,$(notdir $(CUFILES)))
 OBJS +=  $(patsubst %.tm,$(OBJDIR)/%tm.c.o,$(notdir $(TMFILES)))
 
 ################################################################################
-# Set up cubin files
+# Set up cubin output files
 ################################################################################
 CUBINDIR := $(SRCDIR)data
 CUBINS +=  $(patsubst %.cu,$(CUBINDIR)/%.cubin,$(notdir $(CUBINFILES)))
