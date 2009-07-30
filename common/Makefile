@@ -41,8 +41,6 @@ CCFILES := 	src/bank_checker.cpp    \
 		src/stopwatch.cpp       \
 		src/stopwatch_linux.cpp \
 		src/multithreading.cpp  
-#		src/cuda_drvapi_dynlink.cpp \ 
-#		src/cuda_runtime_dynlink.cpp \
 
 SRCDIR := src/
 

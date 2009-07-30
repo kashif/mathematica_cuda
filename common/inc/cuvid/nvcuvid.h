@@ -1,36 +1,12 @@
 /*
- * Copyright 1993-2008 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
- * NOTICE TO USER:   
- *
- * This source code is subject to NVIDIA ownership rights under U.S. and 
- * international Copyright laws.  Users and possessors of this source code 
- * are hereby granted a nonexclusive, royalty-free license to use this code 
- * in individual and commercial software.
- *
- * NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOURCE 
- * CODE FOR ANY PURPOSE.  IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR 
- * IMPLIED WARRANTY OF ANY KIND.  NVIDIA DISCLAIMS ALL WARRANTIES WITH 
- * REGARD TO THIS SOURCE CODE, INCLUDING ALL IMPLIED WARRANTIES OF 
- * MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
- * IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL, 
- * OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS 
- * OF USE, DATA OR PROFITS,  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE 
- * OR OTHER TORTIOUS ACTION,  ARISING OUT OF OR IN CONNECTION WITH THE USE 
- * OR PERFORMANCE OF THIS SOURCE CODE.  
- *
- * U.S. Government End Users.   This source code is a "commercial item" as 
- * that term is defined at  48 C.F.R. 2.101 (OCT 1995), consisting  of 
- * "commercial computer  software"  and "commercial computer software 
- * documentation" as such terms are  used in 48 C.F.R. 12.212 (SEPT 1995) 
- * and is provided to the U.S. Government only as a commercial end item.  
- * Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through 
- * 227.7202-4 (JUNE 1995), all U.S. Government End Users acquire the 
- * source code with only those rights set forth herein. 
- *
- * Any use of this source code in individual and commercial software must 
- * include, in the user documentation and internal comments to the code,
- * the above Disclaimer and U.S. Government End Users Notice.
+ * NVIDIA Corporation and its licensors retain all intellectual property and 
+ * proprietary rights in and to this software and related documentation and 
+ * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
+ * of this software and related documentation without an express license 
+ * agreement from NVIDIA Corporation is strictly prohibited.
+ * 
  */
 
 #if !defined(__NVCUVID_H__)
@@ -102,8 +78,15 @@ typedef struct
         unsigned char transfer_characteristics;
         unsigned char matrix_coefficients;
     } video_signal_description;
-    unsigned int reserved;          // Reserved for future use
+    unsigned int seqhdr_data_length;          // Additional bytes following (CUVIDEOFORMATEX)
 } CUVIDEOFORMAT;
+
+// Video format including raw sequence header information
+typedef struct
+{
+    CUVIDEOFORMAT format;
+    unsigned char raw_seqhdr_data[1024];
+} CUVIDEOFORMATEX;
 
 
 // Audio Format
@@ -151,15 +134,20 @@ typedef struct _CUVIDSOURCEPARAMS
     void *pvReserved2[8];   // Reserved for future use - set to NULL
 } CUVIDSOURCEPARAMS;
 
+typedef enum {
+    CUVID_FMT_EXTFORMATINFO = 0x100,    // Return extended format structure (CUVIDEOFORMATEX)
+} CUvideosourceformat_flags;
 
+#ifdef _WIN32
 // Video file source
 CUresult CUDAAPI cuvidCreateVideoSource(CUvideosource *pObj, const char *pszFileName, CUVIDSOURCEPARAMS *pParams);
-//CUresult CUDAAPI cuvidCreateVideoSourceW(CUvideosource *pObj, const wchar_t *pwszFileName, CUVIDSOURCEPARAMS *pParams);
+CUresult CUDAAPI cuvidCreateVideoSourceW(CUvideosource *pObj, const wchar_t *pwszFileName, CUVIDSOURCEPARAMS *pParams);
 CUresult CUDAAPI cuvidDestroyVideoSource(CUvideosource obj);
 CUresult CUDAAPI cuvidSetVideoSourceState(CUvideosource obj, cudaVideoState state);
 cudaVideoState CUDAAPI cuvidGetVideoSourceState(CUvideosource obj);
 CUresult CUDAAPI cuvidGetSourceVideoFormat(CUvideosource obj, CUVIDEOFORMAT *pvidfmt, unsigned int flags);
 CUresult CUDAAPI cuvidGetSourceAudioFormat(CUvideosource obj, CUAUDIOFORMAT *paudfmt, unsigned int flags);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -171,7 +159,7 @@ typedef struct _CUVIDPARSERDISPINFO
     int picture_index;
     int progressive_frame;
     int top_field_first;
-    int repeat_first_field;
+    int repeat_first_field; // Number of additional fields (1=ivtc, 2=frame doubling, 4=frame tripling, -1=unpaired field)
     CUvideotimestamp timestamp;
 } CUVIDPARSERDISPINFO;
 
@@ -190,12 +178,14 @@ typedef struct _CUVIDPARSERPARAMS
     unsigned int ulMaxNumDecodeSurfaces;    // Max # of decode surfaces (parser will cycle through these)
     unsigned int ulClockRate;       // Timestamp units in Hz (0=default=10000000Hz)
     unsigned int ulErrorThreshold;  // % Error threshold (0-100) for calling pfnDecodePicture (100=always call pfnDecodePicture even if picture bitstream is fully corrupted)
-    unsigned int uReserved1[6]; // Reserved for future use - set to NULL
+    unsigned int ulMaxDisplayDelay; // Max display queue delay (improves pipelining of decode with display) - 0=no delay (recommended values: 2..4)
+    unsigned int uReserved1[5]; // Reserved for future use - set to 0
     void *pUserData;        // User data for callbacks
     PFNVIDSEQUENCECALLBACK pfnSequenceCallback; // Called before decoding frames and/or whenever there is a format change
     PFNVIDDECODECALLBACK pfnDecodePicture;      // Called when a picture is ready to be decoded (decode order)
     PFNVIDDISPLAYCALLBACK pfnDisplayPicture;    // Called whenever a picture is ready to be displayed (display order)
-    void *pvReserved2[8];    // Reserved for future use - set to NULL
+    void *pvReserved2[7];           // Reserved for future use - set to NULL
+    CUVIDEOFORMATEX *pExtVideoInfo; // [Optional] sequence header data from system layer
 } CUVIDPARSERPARAMS;
 
 

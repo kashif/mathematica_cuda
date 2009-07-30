@@ -1,36 +1,12 @@
 /*
- * Copyright 1993-2008 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
- * NOTICE TO USER:   
- *
- * This source code is subject to NVIDIA ownership rights under U.S. and 
- * international Copyright laws.  Users and possessors of this source code 
- * are hereby granted a nonexclusive, royalty-free license to use this code 
- * in individual and commercial software.
- *
- * NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOURCE 
- * CODE FOR ANY PURPOSE.  IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR 
- * IMPLIED WARRANTY OF ANY KIND.  NVIDIA DISCLAIMS ALL WARRANTIES WITH 
- * REGARD TO THIS SOURCE CODE, INCLUDING ALL IMPLIED WARRANTIES OF 
- * MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
- * IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL, 
- * OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS 
- * OF USE, DATA OR PROFITS,  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE 
- * OR OTHER TORTIOUS ACTION,  ARISING OUT OF OR IN CONNECTION WITH THE USE 
- * OR PERFORMANCE OF THIS SOURCE CODE.  
- *
- * U.S. Government End Users.   This source code is a "commercial item" as 
- * that term is defined at  48 C.F.R. 2.101 (OCT 1995), consisting  of 
- * "commercial computer  software"  and "commercial computer software 
- * documentation" as such terms are  used in 48 C.F.R. 12.212 (SEPT 1995) 
- * and is provided to the U.S. Government only as a commercial end item.  
- * Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through 
- * 227.7202-4 (JUNE 1995), all U.S. Government End Users acquire the 
- * source code with only those rights set forth herein. 
- *
- * Any use of this source code in individual and commercial software must 
- * include, in the user documentation and internal comments to the code,
- * the above Disclaimer and U.S. Government End Users Notice.
+ * NVIDIA Corporation and its licensors retain all intellectual property and 
+ * proprietary rights in and to this software and related documentation and 
+ * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
+ * of this software and related documentation without an express license 
+ * agreement from NVIDIA Corporation is strictly prohibited.
+ * 
  */
  
 #if !defined(__CUDA_VIDEO_H__)
@@ -53,6 +29,11 @@ typedef enum cudaVideoCodec_enum {
     cudaVideoCodec_MPEG4,
     cudaVideoCodec_VC1,
     cudaVideoCodec_H264,
+    cudaVideoCodec_NumCodecs,
+    // Uncompressed YUV
+    cudaVideoCodec_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),
+    cudaVideoCodec_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),
+    cudaVideoCodec_NV12   = (('N'<<24)|('V'<<16)|('1'<<8)|('2')),
 } cudaVideoCodec;
 
 typedef enum cudaVideoSurfaceFormat_enum {
@@ -76,6 +57,7 @@ typedef enum cudaVideoCreateFlags_enum {
     cudaVideoCreate_Default = 0x00,     // Default operation mode: use dedicated video engines
     cudaVideoCreate_PreferCUDA = 0x01,  // Use a CUDA-based decoder if faster than dedicated engines (requires a valid vidLock object for multi-threading)
     cudaVideoCreate_PreferDXVA = 0x02,  // Go through DXVA internally if possible (requires D3D9 interop)
+    cudaVideoCreate_PreferCUVID = 0x04, // Use dedicated video engines directly
 } cudaVideoCreateFlags;
 
 
@@ -88,7 +70,13 @@ typedef struct _CUVIDDECODECREATEINFO
     cudaVideoCodec CodecType;        // cudaVideoCodec_XXX
     cudaVideoChromaFormat ChromaFormat; // cudaVideoChromaFormat_XXX (only 4:2:0 is currently supported)
     unsigned long ulCreationFlags;  // Decoder creation flags (cudaVideoCreateFlags_XXX)
-    unsigned long Reserved1[7];     // Reserved for future use - set to zero
+    unsigned long Reserved1[5];     // Reserved for future use - set to zero
+    struct {                        // area of the frame that should be displayed
+        short left;
+        short top;
+        short right;
+        short bottom;
+    } display_area;
     // Output format
     cudaVideoSurfaceFormat OutputFormat;       // cudaVideoSurfaceFormat_XXX
     cudaVideoDeinterlaceMode DeinterlaceMode;  // cudaVideoDeinterlaceMode_XXX
@@ -265,7 +253,12 @@ typedef struct _CUVIDPROCPARAMS
     int second_field;       // Output the second field (ignored if deinterlace mode is Weave)
     int top_field_first;    // Input frame is top field first (1st field is top, 2nd field is bottom)
     int unpaired_field;     // Input only contains one field (2nd field is invalid)
-    unsigned int Reserved[63]; // Reserved for future use
+    // The fields below are reserved for future use (set to zero)
+    unsigned int reserved_flags; // Reserved for future use (set to zero)
+    CUdeviceptr raw_input_dptr; // Reserved for raw YUV extensions (set to zero)
+    unsigned int raw_input_pitch; // Reserved for raw YUV extensions (set to zero)
+    unsigned int Reserved[54];
+    void *Reserved3[3];
 } CUVIDPROCPARAMS;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
