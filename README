@@ -19,5 +19,3 @@ System Requirments Linux:
   Mathematica
 
   LD_LIBRARY_PATH needs to contain /usr/local/cuda/lib (32-bit) or /usr/local/cuda/lib64 (64-bit).
-
-
