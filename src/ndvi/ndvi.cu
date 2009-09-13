@@ -56,6 +56,8 @@ void ndvi(void)
         return;
     }
     
+    printf("dims0 = %d, dims1 = %d\n",dims_A[0],dims_A[1]);
+    
     //Initializing data
     h_C_GPU = (float *)malloc(dims_A[0]*dims_A[1]*sizeof(float));
 
@@ -65,7 +67,7 @@ void ndvi(void)
     cutilSafeCall( cudaMalloc((void **)&d_B, dims_A[0]*dims_A[1]*sizeof(short int)) );
     cutilSafeCall( cudaMalloc((void **)&d_C, dims_A[0]*dims_A[1]*sizeof(float)) );
 
-    //Copy options data to GPU memory for further processing 
+    //Copy data to GPU memory for further processing 
     cutilSafeCall( cudaMemcpy(d_A, h_A, dims_A[0]*dims_A[1]*sizeof(short int),cudaMemcpyHostToDevice) );
     cutilSafeCall( cudaMemcpy(d_B, h_B, dims_A[0]*dims_A[1]*sizeof(short int),cudaMemcpyHostToDevice) );
 
@@ -74,20 +76,26 @@ void ndvi(void)
     dim3 grid(ceil((float)dims_A[0]/(float)16.0f), ceil((float) dims_A[1]/32.0f), 1);
     dim3 threads(ceil( dims_A[0]/(float)grid.x), ceil( dims_A[1]/(float)grid.y), 1);
 
-
     ndviGPU<<<grid, threads>>>(d_C, d_A, d_B, dims_A[0], dims_A[1]);
-    cutilCheckMsg("ndviGPU() execution failed\n");
+    //cutilCheckMsg("ndviGPU() execution failed\n");
     cutilSafeCall( cudaThreadSynchronize() );
 
-    //Read back GPU results to compare them to CPU results
-    cutilSafeCall( cudaMemcpy(h_C_GPU, d_C, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyDeviceToHost) );
-
-    MLPutReal32List(stdlink, h_C_GPU, dims_A[0]*dims_A[1]);
-
-    cutilSafeCall( cudaFree(d_C) );
+    //Release d_A and d_B
     cutilSafeCall( cudaFree(d_B) );
     cutilSafeCall( cudaFree(d_A) );
 
+    printf("dims0 = %d, dims1 = %d\n",dims_A[0],dims_A[1]);
+
+    //Read back GPU results into h_C_GPU
+    cutilSafeCall( cudaMemcpy(h_C_GPU, d_C, dims_A[0]*dims_A[1]*sizeof(float), cudaMemcpyDeviceToHost) );
+
+    //Release d_C
+    cutilSafeCall( cudaFree(d_C) );
+
+    //Return result
+    MLPutReal32List(stdlink, h_C_GPU, dims_A[0]*dims_A[1]);
+
+    //Release h_A and h_B
     MLReleaseInteger16Array(stdlink, h_A, dims_A, heads_A, rank_A);
     MLReleaseInteger16Array(stdlink, h_B, dims_B, heads_B, rank_B);
 
