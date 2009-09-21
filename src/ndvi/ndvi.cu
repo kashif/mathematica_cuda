@@ -30,9 +30,7 @@ int main(int argc, char **argv)
     else
         cudaSetDevice( cutGetMaxGflopsDeviceId() );
 
-    int result = MLMain(argc, argv);
-    cutilExit(argc, argv);
-    return result;
+    return MLMain(argc, argv);
 }
 
 void ndvi(void)
