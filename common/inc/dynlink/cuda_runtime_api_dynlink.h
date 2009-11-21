@@ -75,10 +75,17 @@
 *                                                                              *
 *******************************************************************************/
 
+#ifdef _WIN32
+#define CUDARTAPI __stdcall
+#else
+#define CUDARTAPI 
+#endif
+
+
 #if defined(__cplusplus)
 
-namespace dyn
-{
+//namespace dyn
+//{
 
 extern "C" {
 #endif /* __cplusplus */
@@ -332,9 +339,11 @@ extern __host__ cudaError_t CUDARTAPI cudaRuntimeDynload(void);
 
 #if defined(__cplusplus)
 
-} /* namespace dyn */
-
 }
+
+// } /* namespace dyn */
+
+
 #endif /* __cplusplus */
 
 #undef __dv

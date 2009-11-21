@@ -2,10 +2,10 @@
  * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
  * 
  */
  
@@ -134,22 +134,22 @@ inline void cutilDrvCudaCheckCtxLost(const char *errorMessage, const char *file,
     } 
 }
 
-// General check for CUDA GPU SM Capabilities
-inline bool cutilDrvCudaCapabilities(int major_version, int minor_version)
+// General check for CUDA GPU SM Capabilities for a specific device #
+inline bool cutilDrvCudaDevCapabilities(int major_version, int minor_version, int deviceNum)
 {
-    int major, minor;
-    int dev;
+    int major, minor, dev;
     char device_name[256];
 
 #ifdef __DEVICE_EMULATION__
     printf("> Compute Device Emulation Mode \n");
 #endif
 
-    cutilDrvSafeCallNoSync( cuDeviceGet(&dev, 0) );
+    cutilDrvSafeCallNoSync( cuDeviceGet(&dev, deviceNum) );
     cutilDrvSafeCallNoSync( cuDeviceComputeCapability(&major, &minor, dev));
     cutilDrvSafeCallNoSync( cuDeviceGetName(device_name, 256, dev) ); 
 
-    if(major >= major_version && minor >= minor_version)
+    if((major > major_version) ||
+	   (major == major_version && minor >= minor_version))
     {
         printf("> Compute SM %d.%d Device Detected\n", major, minor);
         printf("> Device %d: <%s>\n", dev, device_name);
@@ -162,5 +162,12 @@ inline bool cutilDrvCudaCapabilities(int major_version, int minor_version)
         return false;
     }
 }
+
+// General check for CUDA GPU SM Capabilities
+inline bool cutilDrvCudaCapabilities(int major_version, int minor_version)
+{
+	return cutilDrvCudaDevCapabilities(major_version, minor_version, 0);
+}
+
 
 #endif // _CUTIL_INLINE_FUNCTIONS_DRVAPI_H_

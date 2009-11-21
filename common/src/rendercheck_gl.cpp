@@ -2,10 +2,14 @@
  * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
+ *
+ * Please refer to the applicable NVIDIA end user license agreement (EULA) 
+ * associated with this source code for terms and conditions that govern 
+ * your use of this NVIDIA software.
  * 
  */
 
@@ -201,7 +205,7 @@ CheckRender::PPMvsPPM( const char *src_file, const char *ref_file, const float e
     return (cutComparePPM( src_file, ref_file_path, epsilon, threshold, true ) == CUTTrue ? true : false);
 }
 
-void CheckRender::dumpBin(void *data, unsigned int bytes, char *filename) 
+void CheckRender::dumpBin(void *data, unsigned int bytes, const char *filename) 
 {
     printf("CheckRender::dumpBin: <%s>\n", filename);
     FILE *fp = fopen(filename, "wb");
@@ -285,9 +289,9 @@ bool CheckRender::compareBin2BinFloat(const char *src_file, const char *ref_file
     }
     char *ref_file_path = cutFindFilePath(ref_file, m_ExecPath);
     if (ref_file_path == NULL) {
-        printf("compareBin2Bin <float> unable to find <%s> in <%s>\n");
-        printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", ref_file);
-        printf("Aborting comparison!\n", ref_file, m_ExecPath);
+        printf("compareBin2Bin <float> unable to find <%s> in <%s>\n", ref_file, m_ExecPath);
+        printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", m_ExecPath);
+        printf("Aborting comparison!\n");
         printf("  FAILED!\n");
         error_count++;
 
@@ -1266,11 +1270,11 @@ bool CheckFBO::readback( GLuint width, GLuint height, GLuint bufObject )
             // Reading direct to FBO using glReadPixels
             glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, bufObject );
             ret = checkStatus(__FILE__, __LINE__, true);
-            if (!ret) printf("CheckFBO::readback::glBindFramebufferEXT() fbo=%d checkStatus = %d\n", bufObject, ret);
+            if (!ret) printf("CheckFBO::readback::glBindFramebufferEXT() fbo=%d checkStatus = %d\n", (int)bufObject, (int)ret);
 
             glReadBuffer(static_cast<GLenum>(GL_COLOR_ATTACHMENT0_EXT));
             ret &= checkStatus(__FILE__, __LINE__, true);
-            if (!ret) printf("CheckFBO::readback::glReadBuffer() fbo=%d checkStatus = %d\n", bufObject, ret);
+            if (!ret) printf("CheckFBO::readback::glReadBuffer() fbo=%d checkStatus = %d\n", (int)bufObject, (int)ret);
 
             glReadPixels(0, 0, width, height, getPixelFormat(), GL_UNSIGNED_BYTE, m_pImageData);
 

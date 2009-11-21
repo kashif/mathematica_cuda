@@ -1,4 +1,4 @@
-# CUDA SDK Version 2.20.0116.0120
+# NVIDIA GPU Computing SDK Version 3.00
 ifeq ($(emu), 1)
   PROJECTS := $(shell find src -name Makefile | xargs grep -L 'USEDRVAPI')
 else
@@ -25,7 +25,7 @@ lib/libparamgl.so:
 
 lib/librendercheckgl.so:
 	@make -C common -f Makefile_rendercheckgl
-
+	
 tidy:
 	@find * | egrep "#" | xargs rm -f
 	@find * | egrep "\~" | xargs rm -f

@@ -57,7 +57,7 @@
 
 template<class T> __inline__ __host__ cudaChannelFormatDesc cudaCreateChannelDesc(void)
 {
-  return dyn::cudaCreateChannelDesc(0, 0, 0, 0, cudaChannelFormatKindNone);
+	return dyn::cudaCreateChannelDesc(0, 0, 0, 0, cudaChannelFormatKindNone);
 }
 
 template<> __inline__ __host__ cudaChannelFormatDesc cudaCreateChannelDesc<char>(void)

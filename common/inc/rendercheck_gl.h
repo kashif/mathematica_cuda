@@ -2,10 +2,14 @@
  * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
+ *
+ * Please refer to the applicable NVIDIA end user license agreement (EULA) 
+ * associated with this source code for terms and conditions that govern 
+ * your use of this NVIDIA software.
  * 
  */
 
@@ -84,7 +88,7 @@ public:
 
     void    setThresholdCompare(float value) { m_fThresholdCompare = value; }
 
-    virtual void dumpBin(void *data, unsigned int bytes, char *filename);
+    virtual void dumpBin(void *data, unsigned int bytes, const char *filename);
     virtual bool compareBin2BinUint(const char *src_file, const char *ref_file, unsigned int nelements, const float epsilon, const float threshold);
     virtual bool compareBin2BinFloat(const char *src_file, const char *ref_file, unsigned int nelements, const float epsilon, const float threshold);
 

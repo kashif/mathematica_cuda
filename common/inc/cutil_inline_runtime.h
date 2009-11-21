@@ -2,10 +2,10 @@
  * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
  * 
  */
  
@@ -223,7 +223,8 @@ inline bool cutilCudaCapabilities(int major_version, int minor_version)
     cutilSafeCall( cudaGetDevice(&dev) );
     cutilSafeCall( cudaGetDeviceProperties(&deviceProp, dev));
 
-    if(deviceProp.major >= major_version && deviceProp.minor >= minor_version)
+    if((deviceProp.major > major_version) ||
+	   (deviceProp.major == major_version && deviceProp.minor >= minor_version))
     {
         printf("> Compute SM %d.%d Device Detected\n", deviceProp.major, deviceProp.minor);
         printf("> Device %d: <%s>\n", dev, deviceProp.name);

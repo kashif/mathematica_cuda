@@ -21,7 +21,7 @@
 .SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .ptx .tm
 
 # Add new SM Versions here as devices with new Compute Capability are released
-SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
+SM_VERSIONS   := sm_10 sm_11 sm_12 sm_13 sm_20
 
 CUDA_INSTALL_PATH ?= /usr/local/cuda
 
@@ -36,7 +36,7 @@ OSLOWER = $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 # 'linux' is output for Linux system, 'darwin' for OS X
 DARWIN = $(strip $(findstring DARWIN, $(OSUPPER)))
 ifneq ($(DARWIN),)
-   SNOWLEOPARD = $(strip $(findstring 10.6, $(shell egrep "<string>10\.6</string>" /System/Library/CoreServices/SystemVersion.plist)))
+   SNOWLEOPARD = $(strip $(findstring 10.6, $(shell egrep "<string>10\.6" /System/Library/CoreServices/SystemVersion.plist)))
 endif
 
 # detect 32-bit or 64-bit platform
@@ -117,8 +117,9 @@ LIB_ARCH        := $(OSARCH)
 # Determining the necessary Cross-Compilation Flags
 # 32-bit OS, but we target 64-bit cross compilation
 ifeq ($(x86_64),1) 
-    NVCCFLAGS += -m64
-    LIB_ARCH = x86_64
+    NVCCFLAGS       += -m64
+    LIB_ARCH         = x86_64
+    CUDPPLIB_SUFFIX  = x86_64
 
     ifneq ($(DARWIN),)
          CXX_ARCH_FLAGS += -arch x86_64
@@ -128,8 +129,10 @@ ifeq ($(x86_64),1)
 else 
 # 64-bit OS, and we target 32-bit cross compilation
     ifeq ($(i386),1)
-        NVCCFLAGS += -m32
-        LIB_ARCH = i386
+        NVCCFLAGS       += -m32
+        LIB_ARCH         = i386
+        CUDPPLIB_SUFFIX  = i386
+
         ifneq ($(DARWIN),)
              CXX_ARCH_FLAGS += -arch i386
         else
@@ -138,8 +141,17 @@ else
     else 
         ifneq ($(SNOWLEOPARD),)
              NVCCFLAGS += -m32
-             CXX_ARCH_FLAGS += -arch i386 -m32
-             LIB_ARCH  = i386
+             CXX_ARCH_FLAGS += -m32 -arch i386
+             LIB_ARCH        = i386
+             CUDPPLIB_SUFFIX = i386
+        else
+             ifeq "$(strip $(HP_64))" ""
+                LIB_ARCH        = i386
+                CUDPPLIB_SUFFIX = i386
+             else
+                LIB_ARCH        = x86_64
+                CUDPPLIB_SUFFIX = x86_64
+             endif
         endif
     endif
 endif
@@ -240,35 +252,8 @@ ifeq ($(USERENDERCHECKGL),1)
 endif
 
 ifeq ($(USECUDPP), 1)
-    ifeq ($(x86_64),1)
-        CUDPPLIB := -lcudpp64
-    else
-        ifneq ($(SNOWLEOPARD),) 
-            CUDPPLIB := -lcudpp
-        else
-            ifeq "$(strip $(HP_64))" ""
-               CUDPPLIB := -lcudpp
-            else
-               CUDPPLIB := -lcudpp64
-            endif
-        endif
-    endif
+    CUDPPLIB := -lcudpp_$(CUDPPLIB_SUFFIX)$(LIBSUFFIX)
 
-    ifeq ($(i386),1)
-        CUDPPLIB := -lcudpp
-    else
-        ifneq ($(SNOWLEOPARD),) 
-            CUDPPLIB := -lcudpp
-        else
-            ifeq "$(strip $(HP_64))" ""
-               CUDPPLIB := -lcudpp
-            else
-               CUDPPLIB := -lcudpp64
-            endif
-        endif
-    endif
-
-    CUDPPLIB := $(CUDPPLIB)$(LIBSUFFIX)
     ifeq ($(emu), 1)
         CUDPPLIB := $(CUDPPLIB)_emu
     endif
@@ -307,7 +292,12 @@ else
   ifeq ($(USEDRVAPI),1)
      LIB += -lcuda   ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB} 
   else
-     LIB += -lcudart ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB}
+     ifeq ($(emu),1) 
+         LIB += -lcudartemu
+     else 
+         LIB += -lcudart
+     endif
+     LIB += ${OPENGLLIB} $(PARAMGLLIB) $(RENDERCHECKGLLIB) $(CUDPPLIB) $(MATHLIB) ${LIB}
   endif
 endif
 
@@ -417,7 +407,7 @@ $(OBJDIR)/%.cpp.o : $(SRCDIR)%.cpp $(C_DEPS)
 	$(VERBOSE)$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.cu.o : $(SRCDIR)%.cu $(CU_DEPS)
-	$(VERBOSE)$(NVCC) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -c $<
+	$(VERBOSE)$(NVCC) $(NVCCFLAGS) $(SMVERSIONFLAGS) $(GENCODE_ARCH) -o $@ -c $<
 
 $(CUBINDIR)/%.cubin : $(SRCDIR)%.cu cubindirectory
 	$(VERBOSE)$(NVCC) $(CUBIN_ARCH_FLAG) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -cubin $<
@@ -427,6 +417,7 @@ $(PTXDIR)/%.ptx : $(SRCDIR)%.cu ptxdirectory
 
 $(SRCDIR)%tm.c : $(SRCDIR)%.tm $(TMFILES)
 	$(VERBOSE)$(MPREP) $? -o $@
+
 #
 # The following definition is a template that gets instantiated for each SM
 # version (sm_10, sm_13, etc.) stored in SMVERSIONS.  It does 2 things:
