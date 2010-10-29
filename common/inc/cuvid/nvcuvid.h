@@ -1,5 +1,5 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
  * proprietary rights in and to this software and related documentation and 
@@ -109,8 +109,9 @@ typedef struct
 
 // Data packet
 typedef enum {
-    CUVID_PKT_ENDOFSTREAM = 0x01,   // Set when this is the last packet for this stream
-    CUVID_PKT_TIMESTAMP   = 0x02,   // Timestamp is valid
+    CUVID_PKT_ENDOFSTREAM   = 0x01,   // Set when this is the last packet for this stream
+    CUVID_PKT_TIMESTAMP     = 0x02,   // Timestamp is valid
+    CUVID_PKT_DISCONTINUITY = 0x04,   // Set when a discontinuity has to be signalled
 } CUvideopacketflags;
 
 typedef struct _CUVIDSOURCEDATAPACKET

@@ -1,12 +1,12 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
- * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
- * 
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
  */
  
  //
@@ -71,24 +71,29 @@ inline GLuint CompileGLSLShaderFromFile( GLenum target, const char* filename)
     FILE *shaderFile;
     char *text;
     long size;
+    size_t fsize = 0;
 
-    //must read files as binary to prevent problems from newline translation
-    shaderFile = fopen( filename, "rb");
+    // read files as binary to prevent problems from newline translation
+    #ifdef _WIN32
+        if (fopen_s(&shaderFile, filename, "rb") != 0)
+    #else
+        if ((shaderFile = fopen(filename, "rb")) == 0)
+    #endif
+        {
+            return 0;
+        }
 
-    if ( shaderFile == NULL)
-        return 0;
-
+    // Get the length of the file
     fseek( shaderFile, 0, SEEK_END);
-
     size = ftell(shaderFile);
 
+    // Read the file contents from the start, then close file and add a null terminator
     fseek( shaderFile, 0, SEEK_SET);
-
     text = new char[size+1];
-
-    fread( text, size, 1, shaderFile);
-
+    fsize = fread( text, size, 1, shaderFile);
     fclose( shaderFile);
+    if (fsize == 0) 
+       printf("CompileGLSLShaderFromFile(), error... fsize = 0\n");
 
     text[size] = '\0';
 
@@ -169,7 +174,6 @@ inline GLuint LinkGLSLProgram( GLuint vertexShader, GLuint geometryShader, GLint
     return program;
 }
 
-
 //
 //
 ////////////////////////////////////////////////////////////
@@ -201,24 +205,29 @@ inline GLuint CompileASMShaderFromFile( GLenum target, const char* filename)
     FILE *shaderFile;
     char *text;
     long size;
+    size_t fsize = 0;
 
-    //must read files as binary to prevent problems from newline translation
-    shaderFile = fopen( filename, "rb");
+    // read files as binary to prevent problems from newline translation
+    #ifdef _WIN32
+        if (fopen_s(&shaderFile, filename, "rb") != 0)
+    #else
+        if ((shaderFile = fopen(filename, "rb")) == 0)
+    #endif
+        {
+            return 0;
+        }
 
-    if ( shaderFile == NULL)
-        return 0;
-
+    // Get the length of the file
     fseek( shaderFile, 0, SEEK_END);
-
     size = ftell(shaderFile);
 
+    // Read the file contents from the start, then close file and add a null terminator
     fseek( shaderFile, 0, SEEK_SET);
-
     text = new char[size+1];
-
-    fread( text, size, 1, shaderFile);
-
+    fsize = fread( text, size, 1, shaderFile);
     fclose( shaderFile);
+    if (fsize == 0) 
+       printf("CompileGLSLShaderFromFile(), error... fsize = 0\n");
 
     text[size] = '\0';
 

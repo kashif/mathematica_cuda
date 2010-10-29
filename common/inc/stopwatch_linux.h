@@ -1,12 +1,12 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
- * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
- * 
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
  */
 
 /* CUda UTility Library */
@@ -142,7 +142,7 @@ StopWatchLinux::getTime() const
 inline const float 
 StopWatchLinux::getAverageTime() const
 {
-    return total_time/clock_sessions;
+    return (clock_sessions > 0) ? (total_time/clock_sessions) : 0.0f;
 }
 
 

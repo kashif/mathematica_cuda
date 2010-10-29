@@ -1,5 +1,5 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and 
  * proprietary rights in and to this software and related documentation and 
@@ -168,6 +168,47 @@ typedef struct _CUVIDMPEG2PICPARAMS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// MPEG-4 Picture Parameters
+//
+
+// MPEG-4 has VOP types instead of Picture types
+#define I_VOP 0
+#define P_VOP 1
+#define B_VOP 2
+#define S_VOP 3
+
+typedef struct _CUVIDMPEG4PICPARAMS
+{
+    int ForwardRefIdx;          // Picture index of forward reference (P/B-frames)
+    int BackwardRefIdx;         // Picture index of backward reference (B-frames)
+    // VOL
+    int video_object_layer_width;
+    int video_object_layer_height;
+    int vop_time_increment_bitcount;
+    int top_field_first;
+    int resync_marker_disable;
+    int quant_type;
+    int quarter_sample;
+    int short_video_header;
+    int divx_flags;
+    // VOP
+    int vop_coding_type;
+    int vop_coded;
+    int vop_rounding_type;
+    int alternate_vertical_scan_flag;
+    int interlaced;
+    int vop_fcode_forward;
+    int vop_fcode_backward;
+    int trd[2];
+    int trb[2];
+    // Quantization matrices (raster order)
+    unsigned char QuantMatrixIntra[64];
+    unsigned char QuantMatrixInter[64];
+    int gmc_enabled;
+} CUVIDMPEG4PICPARAMS;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // VC1 Picture Parameters
 //
 
@@ -237,6 +278,7 @@ typedef struct _CUVIDPICPARAMS
         CUVIDMPEG2PICPARAMS mpeg2;          // Also used for MPEG-1
         CUVIDH264PICPARAMS h264;
         CUVIDVC1PICPARAMS vc1;
+        CUVIDMPEG4PICPARAMS mpeg4;
         unsigned int CodecReserved[1024];
     } CodecSpecific;
 } CUVIDPICPARAMS;

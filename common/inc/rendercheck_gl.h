@@ -1,16 +1,12 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
- * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation. 
- * Any use, reproduction, disclosure, or distribution of this software 
- * and related documentation without an express license agreement from
- * NVIDIA Corporation is strictly prohibited.
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
  *
- * Please refer to the applicable NVIDIA end user license agreement (EULA) 
- * associated with this source code for terms and conditions that govern 
- * your use of this NVIDIA software.
- * 
  */
 
 #ifndef _RENDERCHECK_GL_H_
@@ -73,10 +69,10 @@ public:
     virtual int  getPixelFormat() { return m_PixelFormat; }
     virtual bool checkStatus(const char *zfile, int line, bool silent) = 0;
     virtual bool readback( GLuint width, GLuint height ) = 0;
-	virtual bool readback( GLuint width, GLuint height, GLuint bufObject ) = 0;
-	virtual bool readback( GLuint width, GLuint height, unsigned char *membuf ) = 0;
+    virtual bool readback( GLuint width, GLuint height, GLuint bufObject ) = 0;
+    virtual bool readback( GLuint width, GLuint height, unsigned char *membuf ) = 0;
 
-	virtual void bindReadback();
+    virtual void bindReadback();
     virtual void unbindReadback();
 
     virtual void savePGM(  const char *zfilename, bool bInvert, void **ppReadBuf );
@@ -84,7 +80,6 @@ public:
 
     virtual bool PGMvsPGM( const char *src_file, const char *ref_file, const float epsilon, const float threshold = 0.0f );
     virtual bool PPMvsPPM( const char *src_file, const char *ref_file, const float epsilon, const float threshold = 0.0f );
-
 
     void    setThresholdCompare(float value) { m_fThresholdCompare = value; }
 
@@ -106,24 +101,24 @@ protected:
 class CheckBackBuffer : public CheckRender
 {
 public:
-	CheckBackBuffer(unsigned int width, unsigned int height, unsigned int Bpp, bool bUseOpenGL = true);
-	virtual ~CheckBackBuffer();
+    CheckBackBuffer(unsigned int width, unsigned int height, unsigned int Bpp, bool bUseOpenGL = true);
+    virtual ~CheckBackBuffer();
 
-	virtual bool checkStatus(const char *zfile, int line, bool silent);
+    virtual bool checkStatus(const char *zfile, int line, bool silent);
     virtual bool readback( GLuint width, GLuint height );
-	virtual bool readback( GLuint width, GLuint height, GLuint bufObject );
-	virtual bool readback( GLuint width, GLuint height, unsigned char *membuf );
+    virtual bool readback( GLuint width, GLuint height, GLuint bufObject );
+    virtual bool readback( GLuint width, GLuint height, unsigned char *membuf );
 
 private:
-	virtual void bindFragmentProgram() {}; 
-	virtual void bindRenderPath() {};
-	virtual void unbindRenderPath() {};
+    virtual void bindFragmentProgram() {}; 
+    virtual void bindRenderPath() {};
+    virtual void unbindRenderPath() {};
 
-	// bind to the FBO to Texture
-	virtual void bindTexture() {}; 
+    // bind to the BackBuffer to Texture
+    virtual void bindTexture() {}; 
 
-	// release this bind
-	virtual void unbindTexture() {}; 
+    // release this bind
+    virtual void unbindTexture() {}; 
 };
 
 
@@ -159,8 +154,6 @@ class CFrameBufferObject
 {
 public:
     CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, bool bUseFloat, GLenum eTarget);
-    CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, fboData &data, fboConfig &config, bool bUseFloat = false);
-    CFrameBufferObject (unsigned int width, unsigned int height, unsigned int Bpp, fboData &data, fboConfig &config, bool bUseFloat, GLenum eTarget);
 
     virtual ~CFrameBufferObject();
 
@@ -187,39 +180,40 @@ public:
        glEnable(GL_FRAGMENT_PROGRAM_ARB);
     }
 
-	// bind to the FrameBuffer Object
-	void bindRenderPath() {
-		glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, m_fboData.fb );
-	}
+    // bind to the FrameBuffer Object
+    void bindRenderPath() {
+        glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, m_fboData.fb );
+    }
 
-	// release current FrameBuffer Object
-	void unbindRenderPath() {
-		glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 );
-	}
+    // release current FrameBuffer Object
+    void unbindRenderPath() {
+        glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 );
+    }
 
-	// bind to the FBO to Texture
-	void bindTexture() {
-		glBindTexture( m_eGLTarget, m_fboData.colorTex );
-	}
+    // bind to the FBO to Texture
+    void bindTexture() {
+        glBindTexture( m_eGLTarget, m_fboData.colorTex );
+    }
 
-	// release this bind
-	void unbindTexture() {
-		glBindTexture( m_eGLTarget, 0 );
-	}
+    // release this bind
+    void unbindTexture() {
+        glBindTexture( m_eGLTarget, 0 );
+    }
 
-	GLuint getFbo()      { return m_fboData.fb; }
-	GLuint getTex()      { return m_fboData.colorTex; }
-	GLuint getDepthTex() { return m_fboData.depthTex; }
+    GLuint getFbo()      { return m_fboData.fb; }
+    GLuint getTex()      { return m_fboData.colorTex; }
+    GLuint getDepthTex() { return m_fboData.depthTex; }
 
 private:
-	fboData		m_fboData;
-	fboConfig	m_fboConfig;
+    GLuint    m_Width, m_Height;
+    fboData   m_fboData;
+    fboConfig m_fboConfig;
 
-	GLuint		m_textureProgram;
-	GLuint		m_overlayProgram;
+    GLuint    m_textureProgram;
+    GLuint    m_overlayProgram;
 
-	bool		m_bUseFloat;
-	GLenum      m_eGLTarget;
+    bool      m_bUseFloat;
+    GLenum    m_eGLTarget;
 };
 
 

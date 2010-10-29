@@ -1,16 +1,12 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
- * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation. 
- * Any use, reproduction, disclosure, or distribution of this software 
- * and related documentation without an express license agreement from
- * NVIDIA Corporation is strictly prohibited.
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
  *
- * Please refer to the applicable NVIDIA end user license agreement (EULA) 
- * associated with this source code for terms and conditions that govern 
- * your use of this NVIDIA software.
- * 
  */
 
 //
@@ -63,6 +59,14 @@ CheckRender::allocateMemory( unsigned int width, unsigned int height, unsigned i
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, m_pboReadback);
         glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, width*height*Bpp, NULL, GL_STREAM_READ);
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    }
+    // Reserved for future use
+    if (bUseFBO) {
+
+    }
+    // Reserved for future use
+    if (bQAReadback) {
+
     }
 
     m_pImageData = (unsigned char *)malloc(width*height*Bpp);  // This is the image data stored in system memory
@@ -145,8 +149,8 @@ CheckRender::PGMvsPGM( const char *src_file, const char *ref_file, const float e
     if (ref_file_path == NULL) {
         printf("CheckRender::PGMvsPGM unable to find <%s> in <%s> Aborting comparison!\n", ref_file, m_ExecPath);
         printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", ref_file);
-        printf("Aborting comparison!\n", ref_file, m_ExecPath);
-        printf("  FAILED!\n");
+        printf("Aborting comparison!\n");
+        printf("  FAILED\n");
         error_count++;
     } else {
 
@@ -174,9 +178,9 @@ CheckRender::PGMvsPGM( const char *src_file, const char *ref_file, const float e
     }
 
     if (error_count == 0) { 
-        printf("  PASSED!\n"); 
+        printf("  OK\n"); 
     } else {
-        printf("  FAILED! %d errors...\n", (unsigned int)error_count);
+		printf("  FAILURE: %d errors...\n", (unsigned int)error_count);
     }
     return (error_count == 0);  // returns true if all pixels pass
 }
@@ -184,15 +188,14 @@ CheckRender::PGMvsPGM( const char *src_file, const char *ref_file, const float e
 bool 
 CheckRender::PPMvsPPM( const char *src_file, const char *ref_file, const float epsilon, const float threshold )
 {
-    unsigned char *src_data = NULL, *ref_data = NULL;
     unsigned long error_count = 0;
 
     char *ref_file_path = cutFindFilePath(ref_file, m_ExecPath);
     if (ref_file_path == NULL) {
         printf("CheckRender::PPMvsPPM unable to find <%s> in <%s> Aborting comparison!\n", ref_file, m_ExecPath);
         printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", ref_file);
-        printf("Aborting comparison!\n", ref_file, m_ExecPath);
-        printf("  FAILED!\n");
+        printf("Aborting comparison!\n");
+        printf("  FAILED\n");
         error_count++;
     } 
 
@@ -200,8 +203,8 @@ CheckRender::PPMvsPPM( const char *src_file, const char *ref_file, const float e
         printf("PPMvsPPM: Aborting comparison\n");
         return false;
     }
-	printf("   src_file <%s>\n", src_file);
-	printf("   ref_file <%s>\n", ref_file_path);
+    printf("   src_file <%s>\n", src_file);
+    printf("   ref_file <%s>\n", ref_file_path);
     return (cutComparePPM( src_file, ref_file_path, epsilon, threshold, true ) == CUTTrue ? true : false);
 }
 
@@ -220,6 +223,7 @@ bool CheckRender::compareBin2BinUint(const char *src_file, const char *ref_file,
     FILE *src_fp = NULL, *ref_fp = NULL;
 
     unsigned long error_count = 0;
+    size_t fsize = 0;
 
     if ((src_fp = fopen(src_file, "rb")) == NULL) {
         printf("compareBin2Bin <unsigned int> unable to open src_file: %s\n", src_file);   
@@ -227,10 +231,10 @@ bool CheckRender::compareBin2BinUint(const char *src_file, const char *ref_file,
     }
     char *ref_file_path = cutFindFilePath(ref_file, m_ExecPath);
     if (ref_file_path == NULL) {
-        printf("compareBin2Bin <unsigned int>  unable to find <%s> in <%s>\n");
+        printf("compareBin2Bin <unsigned int>  unable to find <%s> in <%s>\n", ref_file, m_ExecPath);
         printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", ref_file);
-        printf("Aborting comparison!\n", ref_file, m_ExecPath);
-        printf("  FAILED!\n");
+        printf("Aborting comparison!\n");
+        printf("  FAILED\n");
         error_count++;
 
         if (src_fp) fclose(src_fp);
@@ -247,12 +251,12 @@ bool CheckRender::compareBin2BinUint(const char *src_file, const char *ref_file,
             src_buffer = (unsigned int *)malloc(nelements*sizeof(unsigned int));
             ref_buffer = (unsigned int *)malloc(nelements*sizeof(unsigned int));
 
-            fread(src_buffer, nelements, sizeof(unsigned int), src_fp);
-            fread(ref_buffer, nelements, sizeof(unsigned int), ref_fp);
+            fsize = fread(src_buffer, nelements, sizeof(unsigned int), src_fp);
+            fsize = fread(ref_buffer, nelements, sizeof(unsigned int), ref_fp);
 
             printf("> compareBin2Bin <unsigned int> nelements=%d, epsilon=%4.2f, threshold=%4.2f\n", nelements, epsilon, threshold);
-			printf("   src_file <%s>\n", src_file);
-			printf("   ref_file <%s>\n", ref_file_path);
+            printf("   src_file <%s>\n", src_file);
+            printf("   ref_file <%s>\n", ref_file_path);
             if (!cutCompareuit( ref_buffer, src_buffer, nelements, epsilon, threshold))
                 error_count++;
 
@@ -268,9 +272,9 @@ bool CheckRender::compareBin2BinUint(const char *src_file, const char *ref_file,
     }
 
     if (error_count == 0) { 
-        printf("  PASSED!\n"); 
+        printf("  OK\n"); 
     } else {
-        printf("  FAILED! %d errors...\n", (unsigned int)error_count);
+        printf("  FAILURE: %d errors...\n", (unsigned int)error_count);
     }
 
     return (error_count == 0);  // returns true if all pixels pass
@@ -280,6 +284,7 @@ bool CheckRender::compareBin2BinFloat(const char *src_file, const char *ref_file
 {
     float *src_buffer, *ref_buffer;
     FILE *src_fp = NULL, *ref_fp = NULL;
+    size_t fsize = 0;
 
     unsigned long error_count = 0;
 
@@ -292,7 +297,7 @@ bool CheckRender::compareBin2BinFloat(const char *src_file, const char *ref_file
         printf("compareBin2Bin <float> unable to find <%s> in <%s>\n", ref_file, m_ExecPath);
         printf(">>> Check info.xml and [project//data] folder <%s> <<<\n", m_ExecPath);
         printf("Aborting comparison!\n");
-        printf("  FAILED!\n");
+        printf("  FAILED\n");
         error_count++;
 
         if (src_fp) fclose(src_fp);
@@ -309,8 +314,8 @@ bool CheckRender::compareBin2BinFloat(const char *src_file, const char *ref_file
             src_buffer = (float *)malloc(nelements*sizeof(float));
             ref_buffer = (float *)malloc(nelements*sizeof(float));
 
-            fread(src_buffer, nelements, sizeof(float), src_fp);
-            fread(ref_buffer, nelements, sizeof(float), ref_fp);
+            fsize = fread(src_buffer, nelements, sizeof(float), src_fp);
+            fsize = fread(ref_buffer, nelements, sizeof(float), ref_fp);
 
             printf("> compareBin2Bin <float> nelements=%d, epsilon=%4.2f, threshold=%4.2f\n", nelements, epsilon, threshold);
 			printf("   src_file <%s>\n", src_file);
@@ -332,9 +337,9 @@ bool CheckRender::compareBin2BinFloat(const char *src_file, const char *ref_file
     }
 
     if (error_count == 0) { 
-        printf("  PASSED!\n"); 
+        printf("  OK\n"); 
     } else {
-        printf("  FAILED! %d errors...\n", (unsigned int)error_count);
+		printf("  FAILURE: %d errors...\n", (unsigned int)error_count);
     }
 
     return (error_count == 0);  // returns true if all pixels pass
@@ -520,9 +525,15 @@ bool CheckBackBuffer::readback( GLuint width, GLuint height, unsigned char *memB
 // Class for CFrameBufferObject (container for FBO rendering)
 CFrameBufferObject::CFrameBufferObject(unsigned int width, unsigned int height, 
                                        unsigned int Bpp, bool bUseFloat, GLenum eTarget) :
+                        m_Width(width),
+                        m_Height(height),
 			m_bUseFloat(bUseFloat), 
 			m_eGLTarget(eTarget)
 {
+    // reserved for future usage
+    if (Bpp) {
+
+    }
 #if NEW_FBO_CODE
     glGenFramebuffersEXT(1, &m_fboData.fb);
 
@@ -538,41 +549,11 @@ CFrameBufferObject::CFrameBufferObject(unsigned int width, unsigned int height,
 //    bool ret = checkStatus(__FILE__, __LINE__, true);
 #else
     // this is th eoriginal FBO path
-	initialize(width, height, m_fboConfig, m_fboData);
-    CHECK_FBO;
-#endif
-}
-
-
-CFrameBufferObject::CFrameBufferObject(unsigned int width, unsigned int height, 
-                                       unsigned int Bpp, fboData &data, fboConfig &config, 
-                                       bool bUseFloat) :
-                  m_fboData(data), 
-                  m_fboConfig(config),
-                  m_bUseFloat(bUseFloat),
-                  m_eGLTarget(GL_TEXTURE_2D)
-{
-#if !NEW_FBO_CODE
     initialize(width, height, m_fboConfig, m_fboData);
-
     CHECK_FBO;
 #endif
 }
 
-CFrameBufferObject::CFrameBufferObject(unsigned int width, unsigned int height, 
-                                       unsigned int Bpp, fboData &data, fboConfig &config, 
-                                       bool bUseFloat, GLenum eTarget) :
-                  m_fboData(data), 
-                  m_fboConfig(config),
-                  m_bUseFloat(bUseFloat),
-                  m_eGLTarget(eTarget)
-{
-#if !NEW_FBO_CODE
-	initialize(width, height, m_fboConfig, m_fboData);
-
-    CHECK_FBO;
-#endif
-}
 
 CFrameBufferObject::~CFrameBufferObject()
 {
@@ -678,11 +659,11 @@ bool CFrameBufferObject::initialize(unsigned int width, unsigned int height, fbo
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
     if (m_bUseFloat) {
-	    // load fragment programs
-	    const char* strTextureProgram2D = 
-		    "!!ARBfp1.0\n"
-		    "TEX result.color, fragment.texcoord[0], texture[0], 2D;\n"
-		    "END\n";
+	// load fragment programs
+	const char* strTextureProgram2D = 
+                   "!!ARBfp1.0\n"
+                   "TEX result.color, fragment.texcoord[0], texture[0], 2D;\n"
+                   "END\n";
 
         m_textureProgram = nv::CompileASMShader( GL_FRAGMENT_PROGRAM_ARB, strTextureProgram2D );
 
@@ -706,6 +687,9 @@ bool CFrameBufferObject::initialize(unsigned int width, unsigned int height, fbo
 void CFrameBufferObject::renderQuad(int width, int height, GLenum eTarget)
 {
 #if 1
+    float width_norm  = (float)width/(float)m_Width,
+          height_norm = (float)height/(float)m_Height;
+
     // Bind the FBO texture for the display path
     glBindTexture(eTarget, m_fboData.colorTex);
 
@@ -722,10 +706,10 @@ void CFrameBufferObject::renderQuad(int width, int height, GLenum eTarget)
 
 	glBegin(GL_QUADS);
 	{
-		glVertex2f(0, 0); glTexCoord2f(0, 0);
-		glVertex2f(0, 1); glTexCoord2f(1, 0);
-		glVertex2f(1, 1); glTexCoord2f(1, 1);
-		glVertex2f(1, 0); glTexCoord2f(0, 1);
+		glVertex2f(0.0f      , 0.0f       ); glTexCoord2f(0.0f      , 0.0f       );
+		glVertex2f(0.0f      , height_norm); glTexCoord2f(width_norm, 0.0f       );
+		glVertex2f(width_norm, height_norm); glTexCoord2f(width_norm, height_norm);
+		glVertex2f(width_norm, 0.0f       ); glTexCoord2f(0.0f      , height_norm);
 	}
 	glEnd();
 
@@ -752,25 +736,25 @@ void CFrameBufferObject::renderQuad(int width, int height, GLenum eTarget)
 
     glViewport(0, 0, width, height);
 
-	if (m_bUseFloat) {
-		// fragment program is required to display floating point texture
-		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, m_textureProgram );
-		glEnable(GL_FRAGMENT_PROGRAM_ARB);
-		glDisable(GL_DEPTH_TEST);
-	}
+    if (m_bUseFloat) {
+       // fragment program is required to display floating point texture
+       glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, m_textureProgram );
+       glEnable(GL_FRAGMENT_PROGRAM_ARB);
+       glDisable(GL_DEPTH_TEST);
+    }
 
     glBegin(GL_QUADS);
-	if (eTarget == GL_TEXTURE_2D) {
-		glTexCoord2f(0.0f , 0.0f  ); glVertex3f(-1.0f, -1.0f, 0.5f);
-		glTexCoord2f(1.0f , 0.0f  ); glVertex3f( 1.0f, -1.0f, 0.5f);
-		glTexCoord2f(1.0f , 1.0f  ); glVertex3f( 1.0f,  1.0f, 0.5f);
-		glTexCoord2f(0.0f , 1.0f  ); glVertex3f(-1.0f,  1.0f, 0.5f);
-	} else {
-		glTexCoord2f(0.0f , 0.0f  ); glVertex3f(-1.0f, -1.0f, 0.5f);
-		glTexCoord2f(width, 0.0f  ); glVertex3f( 1.0f, -1.0f, 0.5f);
-		glTexCoord2f(width, height); glVertex3f( 1.0f,  1.0f, 0.5f);
-		glTexCoord2f(0.0f , height); glVertex3f(-1.0f,  1.0f, 0.5f);
-	}
+    if (eTarget == GL_TEXTURE_2D) {
+       glTexCoord2f(0.0f , 0.0f  ); glVertex3f(-1.0f, -1.0f, 0.5f);
+       glTexCoord2f(1.0f , 0.0f  ); glVertex3f( 1.0f, -1.0f, 0.5f);
+       glTexCoord2f(1.0f , 1.0f  ); glVertex3f( 1.0f,  1.0f, 0.5f);
+       glTexCoord2f(0.0f , 1.0f  ); glVertex3f(-1.0f,  1.0f, 0.5f);
+    } else {
+       glTexCoord2f(0.0f , 0.0f  ); glVertex3f(-1.0f, -1.0f, 0.5f);
+       glTexCoord2f(width, 0.0f  ); glVertex3f( 1.0f, -1.0f, 0.5f);
+       glTexCoord2f(width, height); glVertex3f( 1.0f,  1.0f, 0.5f);
+       glTexCoord2f(0.0f , height); glVertex3f(-1.0f,  1.0f, 0.5f);
+    }
 
     glEnd();
 
@@ -782,7 +766,6 @@ void CFrameBufferObject::renderQuad(int width, int height, GLenum eTarget)
     // Release the FBO texture (finished rendering)
     glBindTexture(eTarget, 0);
 #endif
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -847,7 +830,7 @@ bool CFrameBufferObject::create( GLuint width, GLuint height, fboConfig &config,
     bool ret = true;
     GLint query;
 
-	printf("\nCreating FBO <%s> Float:%s\n", config.name.c_str(), (m_bUseFloat ? "Y":"N") );
+    printf("\nCreating FBO <%s> (%dx%d) Float:%s\n", config.name.c_str(), (int)width, (int)height, (m_bUseFloat ? "Y":"N") );
 
     glGenFramebuffersEXT(1, &data.fb);
     glGenTextures(1, &data.colorTex);
@@ -855,10 +838,9 @@ bool CFrameBufferObject::create( GLuint width, GLuint height, fboConfig &config,
     // init texture
     glBindTexture( m_eGLTarget, data.colorTex);
     glTexImage2D ( m_eGLTarget, 0, config.colorFormat, 
-					width, height, 0, GL_RGBA, 
-				   (m_bUseFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), 
-					NULL 
-				  );
+                   width, height, 0, GL_RGBA, 
+	          (m_bUseFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), 
+                   NULL );
 
     glGenerateMipmapEXT( m_eGLTarget );
     
@@ -895,7 +877,7 @@ bool CFrameBufferObject::create( GLuint width, GLuint height, fboConfig &config,
 
         glBindTexture(	m_eGLTarget, data.depthTex );
         glTexImage2D(	m_eGLTarget, 0, config.depthFormat, 
-						width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                        width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     
         glTexParameterf( m_eGLTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // GL_LINEAR);
         glTexParameterf( m_eGLTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // GL_LINEAR);

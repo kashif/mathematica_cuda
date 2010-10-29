@@ -1,6 +1,11 @@
-# NVIDIA GPU Computing SDK Version 3.00
+###############################################################################
+#
+# GPU Computing SDK (CUDA C)
+#
+###############################################################################
+
 ifeq ($(emu), 1)
-  PROJECTS := $(shell find src -name Makefile | xargs grep -L 'USEDRVAPI')
+  PROJECTS := $(shell find src -name Makefile | xargs grep -L 'USEDRVAPI' | xargs grep -L 'USENEWINTEROP' )
 else
   PROJECTS := $(shell find src -name Makefile)
 endif

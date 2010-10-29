@@ -1,8 +1,8 @@
 // -------------------------------------------------------------
-// cuDPP -- CUDA Data Parallel Primitives library
+// CUDPP -- CUDA Data Parallel Primitives library
 // -------------------------------------------------------------
-// $Revision: 3572$
-// $Date: 2009-07-01 15:02:51 +1000 (Wed, 01 Jul 2009) $
+// $Revision:$
+// $Date:$
 // ------------------------------------------------------------- 
 // This source code is distributed under the terms of license.txt in
 // the root directory of this source distribution.
@@ -33,7 +33,13 @@
  * variety of data-parallel algorithms, including sorting, stream 
  * compaction, and building data structures such as trees and 
  * summed-area tables.
+ *
+ * \section overview Overview Presentation
  * 
+ * A brief set of slides that describe the features, design principles,
+ * applications and impact of CUDPP is available here:
+ * <a href="http://cudpp.googlecode.com/svn/trunk/cudpp/doc/CUDPP_slides.pdf">CUDPP Presentation</a>.
+ *
  * \section homepage Homepage
  * Homepage for CUDPP: http://www.gpgpu.org/developer/cudpp/
  * 
@@ -74,8 +80,8 @@
  * 
  * \section opSys Operating System Support
  * 
- * This release (1.1) has been thoroughly tested on the following OSes.
- * - Windows XP (32-bit) (CUDA 2.2)
+ * This release (1.1.1) has been thoroughly tested on the following OSes.
+ * - Windows XP (32-bit) (CUDA 2.2, 3.0)
  * - Windows Vista (32-bit) (CUDA 2.2)
  * - Redhat Enterprise Linux 5 (64-bit) (CUDA 2.2)
  * - Ubuntu Linux 8.04 (32-bit and 64-bit) (CUDA 2.2)
@@ -89,7 +95,7 @@
  *
  * \section cuda CUDA
  * CUDPP is implemented in
- * <a href="http://developer.nvidia.com/cuda">C for CUDA</a>. It requires the 
+ * <a href="http://developer.nvidia.com/cuda">CUDA C/C++</a>. It requires the 
  * CUDA Toolkit version 2.2 or later.  Please see the NVIDIA 
  * <a href="http://developer.nvidia.com/cuda">CUDA</a> homepage to download 
  * CUDA as well as the CUDA Programming Guide and CUDA SDK, which includes many 
@@ -153,8 +159,8 @@
  * - Mark Harris, Shubhabrata Sengupta, and John D. Owens. "Parallel Prefix Sum (Scan) with CUDA". In Hubert Nguyen, editor, <i>GPU Gems 3</i>, chapter 39, pages 851&ndash;876. Addison Wesley, August 2007. http://graphics.idav.ucdavis.edu/publications/print_pub?pub_id=916
  * - Shubhabrata Sengupta, Mark Harris, Yao Zhang, and John D. Owens. "Scan Primitives for GPU Computing". In <i>Graphics Hardware 2007</i>, pages 97&ndash;106, August 2007. http://graphics.idav.ucdavis.edu/publications/print_pub?pub_id=915
  * - Shubhabrata Sengupta, Mark Harris, and Michael Garland. "Efficient parallel scan algorithms for GPUs". NVIDIA Technical Report NVR-2008-003, December 2008. http://mgarland.org/papers.html#segscan-tr
- * - Nadathur Satish, Mark Harris, and Michael Garland. "Designing Efficient Sorting Algorithms for Manycore GPUs". <i>Proc. 23rd IEEE Int’l Parallel & Distributed Processing Symposium</i>, May 2009. http://mgarland.org/papers.html#gpusort
- * - Stanley Tzeng, Li-Yi Wei. "Parallel white noise generation on a GPU via cryptographic hash". <i>Proc. 2008 symposium on Interactive 3D graphics and games</i>. pages 79&ndash;87. http://research.microsoft.com/apps/pubs/default.aspx?id=70502
+ * - Nadathur Satish, Mark Harris, and Michael Garland. "Designing Efficient Sorting Algorithms for Manycore GPUs". In <i>Proceedings of the 23rd IEEE International Parallel & Distributed Processing Symposium</i>, May 2009. http://mgarland.org/papers.html#gpusort
+ * - Stanley Tzeng, Li-Yi Wei. "Parallel White Noise Generation on a GPU via Cryptographic Hash". In <i>Proceedings of the 2008 Symposium on Interactive 3D Graphics and Games</i>, pages 79&ndash;87, February 2008. http://research.microsoft.com/apps/pubs/default.aspx?id=70502
  *
  * Many researchers are using CUDPP in their work, and there are many publications 
  * that have used it \ref cudpp_refs "(references)". If your work uses CUDPP, please 
@@ -375,14 +381,14 @@ enum CUDPPOperator
 */
 enum CUDPPAlgorithm
 {
-    CUDPP_SCAN,
-    CUDPP_SEGMENTED_SCAN,
-    CUDPP_COMPACT,
-    CUDPP_REDUCE,
-    CUDPP_SORT_RADIX,        
-    CUDPP_SPMVMULT,          /**< Sparse matrix-dense vector multiplication */
-    CUDPP_RAND_MD5,          /**< Pseudo Random Number Generator using MD5 hash algorithm*/
-    CUDPP_ALGORITHM_INVALID, /**< Placeholder at end of enum */
+    CUDPP_SCAN,              //!< Scan or prefix-sum
+    CUDPP_SEGMENTED_SCAN,    //!< Segmented scan
+    CUDPP_COMPACT,           //!< Stream compact
+    CUDPP_REDUCE,            //!< Parallel reduction (NOTE: currently unimplemented)
+    CUDPP_SORT_RADIX,        //!< Radix sort
+    CUDPP_SPMVMULT,          //!< Sparse matrix-dense vector multiplication
+    CUDPP_RAND_MD5,          //!< PseudoRandom Number Generator using MD5 hash algorithm
+    CUDPP_ALGORITHM_INVALID, //!< Placeholder at end of enum
 };
 
 /**
