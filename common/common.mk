@@ -200,7 +200,7 @@ CUBIN_ARCH_FLAG :=
 ifeq ($(USEGLLIB),1)
     ifneq ($(DARWIN),)
         OPENGLLIB := -L/System/Library/Frameworks/OpenGL.framework/Libraries 
-        OPENGLLIB += -lGL -lGLU $(COMMONDIR)/lib/$(OSLOWER)/libGLEW.a
+        OPENGLLIB += -lGL -lGLU -lGLEW
     else
 # this case for linux platforms
 	OPENGLLIB := -lGL -lGLU -lX11 -lXi -lXmu
@@ -266,27 +266,21 @@ ifeq ($(USECUDPP), 1)
     endif
 endif
 
-ifeq ($(USENVCUVID), 1)
-     ifneq ($(DARWIN),)
-         NVCUVIDLIB := -L../../common/lib/darwin -lnvcuvid
-     endif
-endif
-
 # Libs
 ifneq ($(DARWIN),)
-    LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) $(NVCUVIDLIB) -L$(CADDSDIR)
+    LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(CADDSDIR)
 else
   ifeq "$(strip $(HP_64))" ""
     ifeq ($(x86_64),1)
-       LIB       := -L$(CUDA_INSTALL_PATH)/lib64 -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+       LIB       := -L$(CUDA_INSTALL_PATH)/lib64 -L$(LIBDIR) -L$(CADDSDIR)
     else
-       LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+       LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(CADDSDIR)
     endif
   else
     ifeq ($(i386),1)
-       LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+       LIB       := -L$(CUDA_INSTALL_PATH)/lib -L$(LIBDIR) -L$(CADDSDIR)
     else
-       LIB       := -L$(CUDA_INSTALL_PATH)/lib64 -L$(LIBDIR) -L$(COMMONDIR)/lib/$(OSLOWER) -L$(CADDSDIR)
+       LIB       := -L$(CUDA_INSTALL_PATH)/lib64 -L$(LIBDIR) -L$(CADDSDIR)
     endif
   endif
 endif
