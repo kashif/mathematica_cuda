@@ -44,13 +44,13 @@ HP_64 = $(shell uname -m | grep 64)
 OSARCH= $(shell uname -m)
 
 # Mathematica settings
-VERSION := 7.0
+VERSION := 8.0
 ifneq ($(DARWIN),)
     MLINKDIR := /Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit
     SYS := MacOSX-x86-64
-    MATHLIB := -lMLi3 -lstdc++
+    MATHLIB := -lMLi3 -lstdc++ -framework Foundation
     CADDSDIR := ${MLINKDIR}/CompilerAdditions
-    EXTRA_CFLAGS := -Wno-long-double
+    EXTRA_CFLAGS := 
 else
     MLINKDIR := /usr/local/Wolfram/Mathematica/$(VERSION)/SystemFiles/Links/MathLink/DeveloperKit
     ifeq "$(strip $(HP_64))" ""
