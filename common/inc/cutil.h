@@ -1,12 +1,23 @@
 /*
-* Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+ 
+ /*
+* Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
 *
-* NVIDIA Corporation and its licensors retain all intellectual property and 
-* proprietary rights in and to this software and related documentation and 
-* any modifications thereto.  Any use, reproduction, disclosure, or distribution 
-* of this software and related documentation without an express license 
-* agreement from NVIDIA Corporation is strictly prohibited.
-* 
+* Please refer to the NVIDIA end user license agreement (EULA) associated
+* with this source code for terms and conditions that govern your use of
+* this software. Any use, reproduction, disclosure, or distribution of
+* this software and related documentation outside the terms of the EULA
+* is strictly prohibited.
+*
 */
 
 
@@ -770,7 +781,7 @@ extern "C" {
 #  define CUDA_SAFE_CALL( call)     CUDA_SAFE_CALL_NO_SYNC(call);                                            \
 
 #  define CUDA_SAFE_THREAD_SYNC( ) {                                         \
-    cudaError err = cudaThreadSynchronize();                                 \
+    cudaError err = cudaDeviceSynchronize();                                 \
     if ( cudaSuccess != err) {                                               \
         fprintf(stderr, "Cuda error in file '%s' in line %i : %s.\n",        \
                 __FILE__, __LINE__, cudaGetErrorString( err) );              \
@@ -800,7 +811,7 @@ extern "C" {
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\
         exit(EXIT_FAILURE);                                                  \
     }                                                                        \
-    err = cudaThreadSynchronize();                                           \
+    err = cudaDeviceSynchronize();                                           \
     if( cudaSuccess != err) {                                                \
         fprintf(stderr, "Cuda error: %s in file '%s' in line %i : %s.\n",    \
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\
@@ -869,7 +880,7 @@ extern "C" {
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\
         exit(EXIT_FAILURE);                                                  \
     }                                                                        \
-    err = cudaThreadSynchronize();                                           \
+    err = cudaDeviceSynchronize();                                           \
     if( cudaSuccess != err) {                                                \
         fprintf(stderr, "Cuda error: %s in file '%s' in line %i : %s.\n",    \
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\
@@ -884,7 +895,7 @@ extern "C" {
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\
         exit(EXIT_FAILURE);                                                  \
     }                                                                        \
-    err = cudaThreadSynchronize();                                           \
+    err = cudaDeviceSynchronize();                                           \
     if( cudaSuccess != err) {                                                \
         fprintf(stderr, "Cuda error: %s in file '%s' in line %i : %s.\n",    \
                 errorMessage, __FILE__, __LINE__, cudaGetErrorString( err) );\

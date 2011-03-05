@@ -697,7 +697,7 @@ void CFrameBufferObject::renderQuad(int width, int height, GLenum eTarget)
     glBindTexture(eTarget, 0);
 
     // now render to the full screen using this texture
-	glClearColor(0.2, 0.2, 0.2, 0.0);
+	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, m_textureProgram );

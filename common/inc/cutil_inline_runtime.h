@@ -35,7 +35,8 @@
 #define cutilSafeThreadSync()        __cudaSafeThreadSync(__FILE__, __LINE__)
 #define cufftSafeCall(err)           __cufftSafeCall     (err, __FILE__, __LINE__)
 #define cutilCheckError(err)         __cutilCheckError   (err, __FILE__, __LINE__)
-#define cutilCheckMsg(msg)           __cutilCheckMsg     (msg, __FILE__, __LINE__)
+#define cutilCheckMsg(msg)           __cutilGetLastError (msg, __FILE__, __LINE__)
+#define cutilCheckMsgAndSync(msg)    __cutilGetLastErrorAndSync (msg, __FILE__, __LINE__)
 #define cutilSafeMalloc(mallocCall)  __cutilSafeMalloc   ((mallocCall), __FILE__, __LINE__)
 #define cutilCondition(val)          __cutilCondition    (val, __FILE__, __LINE__)
 #define cutilExit(argc, argv)        __cutilExit         (argc, argv)
@@ -48,7 +49,7 @@ inline void __cutilCondition(int val, char *file, int line)
 }
 
 inline void __cutilExit(int argc, char **argv)
-{
+{     
     if (!cutCheckCmdLineFlag(argc, (const char**)argv, "noprompt")) {
         printf("\nPress ENTER to exit...\n");
         fflush( stdout);
@@ -263,9 +264,9 @@ inline void __cudaSafeCall( cudaError err, const char *file, const int line )
 
 inline void __cudaSafeThreadSync( const char *file, const int line )
 {
-    cudaError err = cudaThreadSynchronize();
+    cudaError err = cudaDeviceSynchronize();
     if ( cudaSuccess != err) {
-        FPRINTF((stderr, "%s(%i) : cudaThreadSynchronize() Driver API error : %s.\n",
+        FPRINTF((stderr, "%s(%i) : cudaDeviceSynchronize() Driver API error : %s.\n",
                 file, line, cudaGetErrorString( err) ));
         exit(-1);
     }
@@ -289,7 +290,7 @@ inline void __cutilCheckError( CUTBoolean err, const char *file, const int line 
     }
 }
 
-inline void __cutilCheckMsg( const char *errorMessage, const char *file, const int line )
+inline void __cutilGetLastError( const char *errorMessage, const char *file, const int line )
 {
     cudaError_t err = cudaGetLastError();
     if( cudaSuccess != err) {
@@ -297,15 +298,25 @@ inline void __cutilCheckMsg( const char *errorMessage, const char *file, const i
                 file, line, errorMessage, cudaGetErrorString( err) ));
         exit(-1);
     }
-#ifdef _DEBUG
-    err = cudaThreadSynchronize();
+}
+
+inline void __cutilGetLastErrorAndSync( const char *errorMessage, const char *file, const int line )
+{
+    cudaError_t err = cudaGetLastError();
     if( cudaSuccess != err) {
-		FPRINTF((stderr, "%s(%i) : cutilCheckMsg cudaThreadSynchronize error: %s : %s.\n",
+        FPRINTF((stderr, "%s(%i) : cutilCheckMsg() CUTIL CUDA error : %s : %s.\n",
                 file, line, errorMessage, cudaGetErrorString( err) ));
         exit(-1);
     }
-#endif
+
+	err = cudaDeviceSynchronize();
+    if( cudaSuccess != err) {
+		FPRINTF((stderr, "%s(%i) : cutilCheckMsg cudaDeviceSynchronize error: %s : %s.\n",
+                file, line, errorMessage, cudaGetErrorString( err) ));
+        exit(-1);
+    }
 }
+
 inline void __cutilSafeMalloc( void *pointer, const char *file, const int line )
 {
     if( !(pointer)) {
@@ -332,7 +343,10 @@ inline void __cutilSafeMalloc( void *pointer, const char *file, const int line )
         if (dev < 0) 
             dev = 0;
         if (dev > deviceCount-1) {
-            fprintf(stderr, "cutilDeviceInit (Device=%d) invalid GPU device.  %d GPU device(s) detected.\n\n", dev, deviceCount);
+			fprintf(stderr, "\n");
+			fprintf(stderr, ">> %d CUDA capable GPU device(s) detected. <<\n", deviceCount);
+            fprintf(stderr, ">> cutilDeviceInit (-device=%d) is not a valid GPU device. <<\n", dev);
+			fprintf(stderr, "\n");
             return -dev;
         }  
         cudaDeviceProp deviceProp;
@@ -381,9 +395,9 @@ inline void cutilCudaCheckCtxLost(const char *errorMessage, const char *file, co
         file, line, errorMessage, cudaGetErrorString( err) ));
         exit(-1);
     }
-    err = cudaThreadSynchronize();
+    err = cudaDeviceSynchronize();
     if( cudaSuccess != err) {
-        FPRINTF((stderr, "%s(%i) : CCUDA error: %s : %s.\n",
+        FPRINTF((stderr, "%s(%i) : CUDA error: %s : %s.\n",
         file, line, errorMessage, cudaGetErrorString( err) ));
         exit(-1);
     }

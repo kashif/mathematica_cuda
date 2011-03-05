@@ -9,7 +9,7 @@
  *
  */
  
- #ifndef _CUTIL_GL_INLINE_H_
+#ifndef _CUTIL_GL_INLINE_H_
 #define _CUTIL_GL_INLINE_H_
 
 #include <stdio.h>
@@ -41,7 +41,10 @@
         if (dev < 0)
             dev = 0;
         if (dev > deviceCount-1) {
-            fprintf(stderr, "cutilDeviceInit (Device=%d) invalid GPU device.  %d GPU device(s) detected.\n\n", dev, deviceCount);
+			fprintf(stderr, "\n");
+			fprintf(stderr, ">> %d CUDA capable GPU device(s) detected. <<\n", deviceCount);
+            fprintf(stderr, ">> cutilDeviceInit (-device=%d) is not a valid GPU device. <<\n", dev);
+			fprintf(stderr, "\n");
             return -dev;
         }
         cudaDeviceProp deviceProp;
@@ -73,7 +76,10 @@
         if (dev < 0)
             dev = 0;
         if (dev > deviceCount-1) {
-            fprintf(stderr, "cutilDeviceInit (Device=%d) invalid GPU device.  %d GPU device(s) detected.\n\n", dev, deviceCount);
+			fprintf(stderr, "\n");
+			fprintf(stderr, ">> %d CUDA capable GPU device(s) detected. <<\n", deviceCount);
+            fprintf(stderr, ">> cutilDeviceInit (-device=%d) is not a valid GPU device. <<\n", dev);
+			fprintf(stderr, "\n");
             return -dev;
         }
         cutilDrvSafeCallNoSync(cuDeviceGet(&cuDevice, dev));

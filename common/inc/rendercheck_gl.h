@@ -25,7 +25,7 @@
 #if defined(__APPLE__) || defined(MACOSX)
 #include <GLUT/glut.h>
 #else
-#include <GL/glut.h>
+    #include <GL/freeglut.h>
 #endif
 
 #include <nvShaderUtils.h>

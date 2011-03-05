@@ -1,12 +1,12 @@
 /*
- * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
  *
- * NVIDIA Corporation and its licensors retain all intellectual property and 
- * proprietary rights in and to this software and related documentation and 
- * any modifications thereto.  Any use, reproduction, disclosure, or distribution 
- * of this software and related documentation without an express license 
- * agreement from NVIDIA Corporation is strictly prohibited.
- * 
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
  */
  
  /*
@@ -24,7 +24,7 @@ void beginWinCoords(void)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-    glTranslatef(0.0, glutGet(GLUT_WINDOW_HEIGHT) - 1, 0.0);
+    glTranslatef(0.0, (GLfloat)(glutGet(GLUT_WINDOW_HEIGHT) - 1.0), 0.0);
     glScalef(1.0, -1.0, 1.0);
 
     glMatrixMode(GL_PROJECTION);
@@ -46,7 +46,7 @@ void endWinCoords(void)
 
 void glPrint(int x, int y, const char *s, void *font)
 {
-    glRasterPos2f(x, y);
+    glRasterPos2f((GLfloat)x, (GLfloat)y);
     int len = (int) strlen(s);
     for (int i = 0; i < len; i++) {
         glutBitmapCharacter(font, s[i]);
@@ -116,14 +116,14 @@ ParamListGL::Render(int x, int y, bool shadow)
 
             glColor3fv((GLfloat *) &m_bar_color_outer.r);
             glBegin(GL_LINE_LOOP);
-            glVertex2f(x + m_bar_x, y + m_bar_offset);
-            glVertex2f(x + m_bar_x + m_bar_w, y + m_bar_offset);
-            glVertex2f(x + m_bar_x + m_bar_w, y + m_bar_offset + m_bar_h);
-            glVertex2f(x + m_bar_x, y + m_bar_offset + m_bar_h);
+            glVertex2f((GLfloat)(x + m_bar_x)          , (GLfloat)(y + m_bar_offset)          );
+            glVertex2f((GLfloat)(x + m_bar_x + m_bar_w), (GLfloat)(y + m_bar_offset)          );
+            glVertex2f((GLfloat)(x + m_bar_x + m_bar_w), (GLfloat)(y + m_bar_offset + m_bar_h));
+            glVertex2f((GLfloat)(x + m_bar_x)          , (GLfloat)(y + m_bar_offset + m_bar_h));
             glEnd();
 
             glColor3fv((GLfloat *) &m_bar_color_inner.r);
-            glRectf(x + m_bar_x, y + m_bar_offset + m_bar_h, x + m_bar_x + ((m_bar_w-1)*(*p)->GetPercentage()), y + m_bar_offset + 1);
+            glRectf((GLfloat)(x + m_bar_x), (GLfloat)(y + m_bar_offset + m_bar_h), (GLfloat)(x + m_bar_x + ((m_bar_w-1)*(*p)->GetPercentage())), (GLfloat)(y + m_bar_offset + 1));
 
             y += m_separation;
         }

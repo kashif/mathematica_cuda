@@ -102,8 +102,8 @@ inline int cutilDrvGetMaxGflopsDeviceId()
 			if ( best_SM_arch > 2 ) {
 				// If our device==dest_SM_arch, choose this, or else pass
 				if (major == best_SM_arch) {	
-                                     max_compute_perf  = compute_perf;
-                                     max_perf_device   = current_device;
+                    max_compute_perf  = compute_perf;
+                    max_perf_device   = current_device;
 				}
 			} else {
 				max_compute_perf  = compute_perf;
@@ -180,8 +180,8 @@ inline int cutilDrvGetMaxGflopsGraphicsDeviceId()
 				if ( best_SM_arch > 2 ) {
 					// If our device = dest_SM_arch, then we pick this one
 					if (major == best_SM_arch) {	
-										 max_compute_perf  = compute_perf;
-										 max_perf_device   = current_device;
+                        max_compute_perf  = compute_perf;
+                        max_perf_device   = current_device;
 					}
 				} else {
 					max_compute_perf  = compute_perf;
@@ -248,8 +248,11 @@ inline void __cuCheckMsg( const char * msg, const char *file, const int line )
         cutGetCmdLineArgumenti(ARGC, (const char **) ARGV, "device", &dev);
         if (dev < 0) dev = 0;
         if (dev > deviceCount-1) {
-           fprintf(stderr, "cutilDeviceInitDrv (Device=%d) invalid GPU device.  %d GPU device(s) detected.\n\n", dev, deviceCount);
-           return -dev;
+			fprintf(stderr, "\n");
+			fprintf(stderr, ">> %d CUDA capable GPU device(s) detected. <<\n", deviceCount);
+            fprintf(stderr, ">> cutilDeviceInit (-device=%d) is not a valid GPU device. <<\n", dev);
+			fprintf(stderr, "\n");
+            return -dev;
         }
         cutilDrvSafeCallNoSync(cuDeviceGet(&cuDevice, dev));
         char name[100];
